@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DataView — Sheets Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #f7f5f2;
+      --surface: #ffffff;
+      --surface2: #f0ede8;
+      --border: #e2ddd6;
+      --border2: #ccc8c0;
+      --txt: #1a1814;
+      --txt2: #5c574f;
+      --txt3: #9c968d;
+      --accent: #c8401e;
+      --accent2: #e8f0fe;
+      --ok: #1a7a4a;
+      --bad: #c8401e;
+      --r: 4px;
+      --sans: 'IBM Plex Sans', system-ui, sans-serif;
+      --serif: 'Libre Baskerville', Georgia, serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);color:var(--txt)}
+    body{font-family:var(--sans);font-size:13px;line-height:1.5}
+
+    /* ── Top bar ── */
+    .topbar{
+      background:var(--txt);
+      color:#f7f5f2;
+      padding:0 24px;
+      display:flex;align-items:center;gap:16px;
+      height:48px;
+      position:sticky;top:0;z-index:100;
+    }
+    .topbar-logo{
+      font-family:var(--serif);
+      font-size:15px;
+      letter-spacing:-.01em;
+      color:#fff;
+      display:flex;align-items:center;gap:8px;
+    }
+    .topbar-logo span{
+      font-size:10px;
+      background:var(--accent);
+      color:#fff;
+      padding:2px 6px;
+      border-radius:2px;
+      font-family:var(--mono);
+      letter-spacing:.06em;
+      font-weight:500;
+    }
+    .topbar-right{
+      margin-left:auto;
+      display:flex;align-items:center;gap:10px;
+    }
+    .status-bar{
+      display:flex;align-items:center;gap:6px;
+      font-size:11px;
+      color:rgba(247,245,242,.55);
+      font-family:var(--mono);
+    }
+    .dot{width:6px;height:6px;border-radius:999px;background:rgba(247,245,242,.3)}
+    .dot.ok{background:#4ade80}
+    .dot.bad{background:#f87171}
+
+    /* ── Layout ── */
+    .shell{display:flex;min-height:calc(100vh - 48px)}
+
+    /* ── Sidebar ── */
+    .sidebar{
+      width:220px;flex-shrink:0;
+      border-right:1px solid var(--border);
+      background:var(--surface);
+      padding:20px 0;
+      position:sticky;top:48px;height:calc(100vh - 48px);
+      overflow-y:auto;
+    }
+    .sidebar-section{
+      padding:0 16px;
+      margin-bottom:24px;
+    }
+    .sidebar-label{
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--txt3);
+      margin-bottom:8px;
+      padding-bottom:6px;
+      border-bottom:1px solid var(--border);
+    }
+    .nav-item{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:7px 10px;
+      border-radius:var(--r);
+      cursor:pointer;
+      font-size:12px;
+      color:var(--txt2);
+      transition:background .1s,color .1s;
+      border:none;background:none;width:100%;text-align:left;
+    }
+    .nav-item:hover{background:var(--surface2);color:var(--txt)}
+    .nav-item.active{
+      background:var(--txt);color:#fff;
+    }
+    .nav-badge{
+      font-size:10px;
+      font-family:var(--mono);
+      opacity:.6;
+    }
+    .nav-item.active .nav-badge{opacity:.5}
+
+    /* ── Main area ── */
+    .main{flex:1;padding:28px 32px;min-width:0}
+
+    /* ── Config panel ── */
+    .config-panel{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      margin-bottom:24px;
+      overflow:hidden;
+    }
+    .config-panel summary{
+      padding:12px 16px;
+      cursor:pointer;
+      user-select:none;
+      font-size:11px;
+      font-weight:600;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      font-family:var(--mono);
+      color:var(--txt2);
+      border-bottom:1px solid transparent;
+      list-style:none;
+      display:flex;align-items:center;gap:8px;
+    }
+    .config-panel[open] summary{
+      border-bottom-color:var(--border);
+      background:var(--surface2);
+    }
+    .config-panel summary::before{content:'▶';font-size:8px;transition:transform .15s}
+    .config-panel[open] summary::before{transform:rotate(90deg)}
+    .config-body{padding:16px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:900px){.grid{grid-template-columns:repeat(5,1fr)}}
+
+    .field-group{display:flex;flex-direction:column;gap:4px}
+    .field-label{font-size:10px;font-family:var(--mono);color:var(--txt3);letter-spacing:.06em;text-transform:uppercase}
+    input{
+      border:1px solid var(--border2);
+      border-radius:var(--r);
+      background:var(--bg);
+      color:var(--txt);
+      padding:8px 10px;
+      font-size:12px;
+      font-family:var(--sans);
+      width:100%;
+      outline:none;
+      transition:border-color .15s;
+    }
+    input:focus{border-color:var(--txt);background:#fff}
+
+    .toolbar{
+      display:flex;gap:8px;align-items:center;
+      flex-wrap:wrap;
+      margin-top:14px;
+      padding-top:14px;
+      border-top:1px solid var(--border);
+    }
+    button{
+      cursor:pointer;
+      font-family:var(--sans);
+      font-size:12px;
+      border-radius:var(--r);
+      border:1px solid var(--border2);
+      background:var(--surface);
+      color:var(--txt);
+      padding:8px 16px;
+      transition:background .1s, border-color .1s;
+    }
+    button:hover{background:var(--surface2)}
+    button.primary{
+      background:var(--txt);
+      color:#fff;
+      border-color:var(--txt);
+      font-weight:600;
+    }
+    button.primary:hover{background:#333}
+
+    .poll-group{
+      display:flex;align-items:center;gap:6px;
+      font-size:11px;color:var(--txt3);
+      margin-left:auto;
+    }
+    .poll-group input{width:60px;padding:6px 8px}
+
+    .err{
+      margin-top:12px;
+      border-left:3px solid var(--bad);
+      background:#fff5f5;
+      color:#7f1d1d;
+      padding:10px 14px;
+      border-radius:0 var(--r) var(--r) 0;
+      font-size:12px;
+    }
+
+    /* ── View header ── */
+    .view-header{
+      display:flex;align-items:baseline;gap:12px;
+      margin-bottom:18px;
+      padding-bottom:14px;
+      border-bottom:2px solid var(--txt);
+    }
+    .view-title{
+      font-family:var(--serif);
+      font-size:22px;
+      font-weight:700;
+      letter-spacing:-.02em;
+      color:var(--txt);
+    }
+    .view-meta{
+      font-size:11px;
+      color:var(--txt3);
+      font-family:var(--mono);
+    }
+    .view-actions{margin-left:auto;display:flex;gap:8px}
+    .btn-open-sheet{
+      font-size:11px;
+      padding:5px 12px;
+      color:var(--txt2);
+      text-decoration:none;
+      border:1px solid var(--border2);
+    }
+
+    /* ── Card list (instead of table) ── */
+    .card-list{display:flex;flex-direction:column;gap:1px;background:var(--border)}
+    .card-list-wrap{
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      overflow:auto;
+      max-height:580px;
+    }
+
+    .card-list-inner{
+      min-width:max-content;
+      width:100%;
+    }
+
+    .list-header{
+      display:grid;
+      background:var(--surface2);
+      border-bottom:2px solid var(--border2);
+      font-size:10px;
+      font-family:var(--mono);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--txt3);
+      position:sticky;top:0;z-index:2;
+      min-width:max-content;
+      width:100%;
+    }
+    .list-row{
+      display:grid;
+      background:var(--surface);
+      cursor:pointer;
+      transition:background .08s;
+      font-size:12px;
+      min-width:max-content;
+      width:100%;
+    }
+    .list-row:hover{background:#faf8f5}
+    .list-row.active{background:#f0f4ff;outline:2px solid #3b5bdb;outline-offset:-2px}
+
+    .list-cell{
+      padding:10px 14px;
+      white-space:nowrap;
+      border-right:1px solid var(--border);
+    }
+    .list-cell:last-child{border-right:none}
+    .list-cell.idx{
+      color:var(--txt3);
+      font-family:var(--mono);
+      font-size:11px;
+      width:52px;flex-shrink:0;
+    }
+    .more-cols-chip{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 7px;
+      background:var(--surface2);
+      border:1px solid var(--border2);
+      border-radius:2px;
+      font-size:10px;
+      font-family:var(--mono);
+      color:var(--txt3);
+    }
+
+    /* ── Detail view ── */
+    .detail-wrap{
+      animation:slideIn .18s ease;
+    }
+    @keyframes slideIn{
+      from{opacity:0;transform:translateX(8px)}
+      to{opacity:1;transform:translateX(0)}
+    }
+
+    /* Breadcrumb back nav */
+    .breadcrumb{
+      display:flex;align-items:center;gap:6px;
+      font-size:11px;
+      font-family:var(--mono);
+      color:var(--txt3);
+      margin-bottom:20px;
+    }
+    .breadcrumb-link{
+      color:var(--accent);
+      cursor:pointer;
+      text-decoration:underline;
+      text-underline-offset:2px;
+      background:none;border:none;
+      font-family:var(--mono);font-size:11px;
+      padding:0;
+    }
+    .breadcrumb-link:hover{color:#a33318}
+    .breadcrumb-sep{color:var(--border2)}
+
+    /* Detail header */
+    .detail-header{
+      background:var(--txt);
+      color:#f7f5f2;
+      border-radius:var(--r);
+      padding:20px 24px;
+      margin-bottom:16px;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+      flex-wrap:wrap;
+    }
+    .detail-record-num{
+      font-family:var(--mono);
+      font-size:10px;
+      color:rgba(247,245,242,.4);
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+    .detail-title{
+      font-family:var(--serif);
+      font-size:20px;
+      font-weight:700;
+      color:#fff;
+      letter-spacing:-.02em;
+      max-width:55ch;
+    }
+    .detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn-action{
+      padding:7px 14px;
+      border-radius:var(--r);
+      border:1px solid rgba(247,245,242,.2);
+      background:rgba(247,245,242,.07);
+      color:rgba(247,245,242,.75);
+      font-size:11px;
+      font-family:var(--mono);
+      cursor:pointer;
+      transition:background .12s,color .12s;
+    }
+    .btn-action:hover{
+      background:rgba(247,245,242,.15);
+      color:#fff;
+    }
+
+    /* Detail body */
+    .detail-body{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+    }
+    @media(min-width:960px){.detail-body{grid-template-columns:1fr 340px}}
+
+    .detail-section{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      overflow:hidden;
+    }
+    .detail-section-head{
+      padding:10px 16px;
+      background:var(--surface2);
+      border-bottom:1px solid var(--border);
+      font-family:var(--mono);
+      font-size:10px;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      color:var(--txt3);
+    }
+
+    /* Field rows — horizontal label:value layout */
+    .field-row{
+      display:flex;
+      border-bottom:1px solid var(--border);
+      transition:background .08s;
+    }
+    .field-row:last-child{border-bottom:none}
+    .field-row:hover{background:#faf8f5}
+    .field-key{
+      width:160px;flex-shrink:0;
+      padding:10px 16px;
+      font-family:var(--mono);
+      font-size:10px;
+      letter-spacing:.05em;
+      color:var(--txt3);
+      border-right:1px solid var(--border);
+      display:flex;align-items:flex-start;
+      padding-top:12px;
+    }
+    .field-val{
+      flex:1;
+      padding:10px 16px;
+      font-size:12px;
+      color:var(--txt);
+      word-break:break-word;
+      line-height:1.6;
+    }
+    .field-val.empty{color:var(--txt3);font-style:italic}
+
+    /* Right sidebar */
+    .detail-sidebar{display:flex;flex-direction:column;gap:16px}
+
+    .notes-area{
+      width:100%;
+      min-height:140px;
+      border:none;
+      border-radius:0;
+      background:transparent;
+      color:var(--txt);
+      padding:14px 16px;
+      resize:vertical;
+      font-size:12px;
+      font-family:var(--sans);
+      line-height:1.7;
+      outline:none;
+    }
+    .notes-area::placeholder{color:var(--txt3)}
+
+    .muted{color:var(--txt3);font-size:11px}
+  </style>
+</head>
+
+<body>
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <img src="https://www.vhv.rs/dpng/d/182-1826286_microsoft-dynamics-crm-dynamics-365-logo-hd-png.png" height="50"><br/>
+	<span>v1</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-bar">
+        <span class="dot" id="dot"></span>
+        <span id="status">In attesa</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- Sidebar navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sorgenti</div>
+        <div id="tabs"></div>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main">
+
+      <!-- Config collapsible -->
+      <details class="config-panel" open>
+        <summary>Configurazione sorgenti</summary>
+        <div class="config-body">
+          <div class="grid" id="inputs"></div>
+          <div class="toolbar">
+            <button class="primary" id="load">Carica dati</button>
+            <button id="reset">Azzera</button>
+            <button id="openSheet" style="display:none">↗ Apri sheet</button>
+            <div class="poll-group">
+              <span>Aggiorna ogni</span>
+              <input id="pollSec" type="number" min="10" step="5" value="60" />
+              <span>sec</span>
+            </div>
+          </div>
+          <div id="globalErr" class="err" style="display:none"></div>
+        </div>
+      </details>
+
+      <!-- View area -->
+      <div>
+        <div class="view-header">
+          <div class="view-title" id="viewTitle">Nessun foglio</div>
+          <div class="view-meta" id="viewMeta">Incolla URL e premi Carica</div>
+          <div class="view-actions">
+            <button id="back" style="display:none" class="breadcrumb-link-btn">← Torna alla lista</button>
+          </div>
+        </div>
+        <div id="view"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // =========================
+    // Config dinamica (UI)
+    // =========================
+    const MAX_SHEETS = 5;
+    let REFRESH_MS = 60000;
+
+    // =========================
+    // State
+    // =========================
+    const S = Array.from({length: MAX_SHEETS}, (_,i)=>({
+      idx:i,
+      url:"",
+      label:"",         // NOME SHEET (leggibile) - inserito dall’utente
+      cols:[],
+      rows:[],
+      loaded:false,
+      error:"",
+      mode:"list",      // list | detail
+      sel:null,
+      sig:""            // signature to skip updates
+    }));
+    let active = 0;
+    let timer = null;
+
+    // =========================
+    // DOM
+    // =========================
+    const $ = (id)=>document.getElementById(id);
+    const inputs = $("inputs");
+    const tabs = $("tabs");
+    const view = $("view");
+    const statusEl = $("status");
+    const dotEl = $("dot");
+    const viewTitle = $("viewTitle");
+    const viewMeta = $("viewMeta");
+    const backBtn = $("back");
+    const openSheetBtn = $("openSheet");
+    const globalErr = $("globalErr");
+    const pollSecInput = $("pollSec");
+
+    // =========================
+    // Helpers
+    // =========================
+    function setStatus(kind, text){
+      dotEl.classList.remove("ok","bad");
+      if (kind === "ok") dotEl.classList.add("ok");
+      if (kind === "bad") dotEl.classList.add("bad");
+      statusEl.textContent = text;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    function parseSheetUrl(url){
+      try{
+        const u = new URL(url.trim());
+        const parts = u.pathname.split("/");
+        const di = parts.indexOf("d");
+        const sheetId = di>=0 ? parts[di+1] : null;
+
+        let gid = "0";
+        const m = (u.hash || "").match(/gid=(\d+)/);
+        if (m) gid = m[1];
+        if (u.searchParams.get("gid")) gid = u.searchParams.get("gid");
+        return { sheetId, gid };
+      } catch {
+        return { sheetId:null, gid:"0" };
+      }
+    }
+
+    function gvizUrl(sheetId, gid){
+      // tqx=out:json fa restituire a GViz un testo tipo:
+      // /*O_o*/\ngoogle.visualization.Query.setResponse({...json...});
+      // che possiamo fetchare e parsare manualmente senza JSONP
+      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+    }
+
+    // =========================
+    // Loader GViz via fetch (niente JSONP, niente script tag)
+    // GViz restituisce testo del tipo:
+    //   /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+    // Estraiamo il JSON con una regex e lo parsiamo.
+    // =========================
+    async function loadGvizViaFetch(url){
+      let resp;
+      try {
+        resp = await fetch(url, { credentials: "omit" });
+      } catch(e) {
+        console.error(
+          `[GViz] Errore di rete (fetch).\n` +
+          `  URL: ${url}\n` +
+          `  Errore: ${e?.message}\n` +
+          `  Cause possibili: connessione assente, CORS bloccato, foglio inesistente.`
+        );
+        throw new Error("Errore di rete. Controlla la console per dettagli.");
+      }
+
+      if (!resp.ok) {
+        console.error(
+          `[GViz] HTTP ${resp.status} ${resp.statusText}\n` +
+          `  URL: ${url}\n` +
+          `  Causa più comune: foglio privato. Vai su Google Sheets → Condividi → ` +
+          `"Chiunque abbia il link" con ruolo Visualizzatore.`
+        );
+        throw new Error(`HTTP ${resp.status}: foglio non accessibile. Controlla la console.`);
+      }
+
+      const text = await resp.text();
+      console.log("[GViz] Risposta grezza (primi 200 char):", text.slice(0, 200));
+
+      // GViz wrappa il JSON in: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+      // Estraiamo tutto ciò che è tra la prima "{" e l'ultima "}"
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/);
+      if (!match) {
+        console.error(
+          `[GViz] Impossibile parsare la risposta GViz.\n` +
+          `  Risposta ricevuta: ${text.slice(0, 500)}\n` +
+          `  Cause possibili: foglio privato, ID errato, o Google ha restituito HTML (pagina di login).`
+        );
+        throw new Error("Risposta GViz non parsabile. Controlla la console per dettagli.");
+      }
+
+      let data;
+      try {
+        data = JSON.parse(match[1]);
+      } catch(e) {
+        console.error("[GViz] JSON.parse fallito:", e.message, "\n  Testo:", match[1].slice(0, 300));
+        throw new Error("Errore parsing JSON GViz. Controlla la console.");
+      }
+
+      return data;
+    }
+
+    function tableToRows(resp){
+      const t = resp?.table;
+      if (!t?.cols || !t?.rows) return { cols:[], rows:[] };
+
+      // La prima riga del foglio è l'intestazione della tabella
+      const firstRow = t.rows[0];
+      const dataRows = t.rows.slice(1);
+
+      const cols = t.cols.map((c,i)=>{
+        // Usa il valore della prima riga come nome colonna, fallback su label GViz o "Col N"
+        const headerCell = firstRow?.c?.[i];
+        const headerVal = (headerCell?.f ?? headerCell?.v ?? "");
+        const name = (headerVal && String(headerVal).trim())
+          ? String(headerVal).trim()
+          : (c.label && String(c.label).trim()) ? c.label : `Col ${i+1}`;
+        return { k:"c"+i, n:name, type:c.type || "string" };
+      });
+
+      const rows = dataRows.map((r,ri)=>{
+        const o = { __id: ri };
+        (r.c || []).forEach((cell,i)=>{
+          const v = (cell?.f ?? cell?.v ?? "");
+          o["c"+i] = String(v);
+        });
+        return o;
+      });
+
+      return { cols, rows };
+    }
+
+    function hash32(str){
+      let h = 2166136261;
+      for (let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h>>>0).toString(16);
+    }
+
+
+    // Wrapper sicuro per localStorage (può fallire in Safari privato o iframe cross-origin)
+    function safeLocalGet(key){
+      try { return localStorage.getItem(key); }
+      catch(e) {
+        console.warn(`[localStorage] getItem fallito: ${e?.message}. Le note non saranno persistenti in questo contesto.`);
+        return null;
+      }
+    }
+    function safeLocalSet(key, val){
+      try { localStorage.setItem(key, val); }
+      catch(e) {
+        console.warn(`[localStorage] setItem fallito: ${e?.message}. Le note non verranno salvate.`);
+      }
+    }
+    // NOME: ora usiamo label leggibile (inserita dall’utente)
+    function sheetName(i){
+      const s = S[i];
+      if (s.label && s.label.trim()) return s.label.trim();
+      return `Lista ${i+1}`;
+    }
+
+    // =========================
+    // Load one sheet
+    // =========================
+    async function loadSheet(i, silent=false){
+      const s = S[i];
+      s.error = "";
+      if (!s.url.trim()) return { changed:false };
+
+      const {sheetId, gid} = parseSheetUrl(s.url);
+      if (!sheetId) {
+        console.error(
+          `[loadSheet] URL non valido per Lista ${i+1}.\n` +
+          `  URL inserito: "${s.url}"\n` +
+          `  L'URL deve essere un Google Sheets del tipo:\n` +
+          `    https://docs.google.com/spreadsheets/d/ID_FOGLIO/edit#gid=0\n` +
+          `  Assicurati che l'URL contenga "/spreadsheets/d/" e un ID foglio valido.`
+        );
+        throw new Error("URL non valido. Controlla la console per dettagli.");
+      }
+
+      console.log(`[loadSheet] Carico Lista ${i+1} | sheetId=${sheetId} | gid=${gid}`);
+
+      const resp = await loadGvizViaFetch(gvizUrl(sheetId, gid));
+      if (resp?.status !== "ok"){
+        const detail = resp?.errors?.[0]?.detailed_message
+                    || resp?.errors?.[0]?.message
+                    || "Nessun dettaglio disponibile";
+        const reason = resp?.errors?.[0]?.reason || "unknown";
+        console.error(
+          `[loadSheet] Foglio non accessibile (Lista ${i+1}).\n` +
+          `  Status GViz: "${resp?.status}"\n` +
+          `  Reason: ${reason}\n` +
+          `  Dettaglio: ${detail}\n` +
+          `  Soluzione: vai su Google Sheets → Condividi → ` +
+          `"Chiunque abbia il link" con ruolo "Visualizzatore".`
+        );
+        throw new Error(detail || "Sheet non accessibile. Controlla la console per dettagli.");
+      }
+
+      const sig = hash32(JSON.stringify(resp.table || {}));
+      if (sig === s.sig) return { changed:false };
+      s.sig = sig;
+
+      const { cols, rows } = tableToRows(resp);
+      if (!cols.length) {
+        console.error(
+          `[loadSheet] Nessuna colonna trovata in Lista ${i+1}.\n` +
+          `  Il foglio potrebbe essere vuoto, oppure il GID specificato punta ` +
+          `a un foglio privo di dati nella prima riga (intestazioni mancanti).`
+        );
+        throw new Error("Nessuna colonna trovata. Controlla la console per dettagli.");
+      }
+
+      s.cols = cols;
+      s.rows = rows;
+      s.loaded = true;
+
+      console.log(`[loadSheet] Lista ${i+1} caricata: ${cols.length} colonne, ${rows.length} righe.`);
+      if (!silent) setStatus("ok", `Caricato: ${sheetName(i)} • ${rows.length} record`);
+      return { changed:true };
+    }
+
+    // =========================
+    // UI: Tabs (sidebar nav style)
+    // =========================
+    function renderTabs(){
+      tabs.innerHTML = "";
+      S.forEach((s,i)=>{
+        const b = document.createElement("button");
+        b.className = "nav-item" + (i===active ? " active" : "");
+        const badge = s.loaded ? `<span class="nav-badge">${s.rows.length}</span>` : "";
+        b.innerHTML = `${escapeHtml(sheetName(i))}${badge}`;
+        b.onclick = ()=>{
+          active = i;
+          S[i].mode = "list";
+          S[i].sel = null;
+          render();
+        };
+        tabs.appendChild(b);
+      });
+    }
+
+    // =========================
+    // UI: Card-row list view
+    // =========================
+    function renderList(s){
+      if (!s.rows.length){
+        view.innerHTML = `<div class="muted">Nessun record.</div>`;
+        return;
+      }
+
+      const MAX_COLS = 10;
+      const shownCols = s.cols.slice(0, MAX_COLS);
+      const colExtra = s.cols.length > MAX_COLS;
+
+      // Calcola larghezza colonna in base al contenuto più lungo (header o celle)
+      // ~7.5px per carattere + 28px padding, min 80px, max 320px
+      function colWidth(col){
+        const headerLen = col.n.length;
+        const maxCellLen = s.rows.reduce((max, r) => {
+          const v = r[col.k] || "";
+          return Math.max(max, v.length);
+        }, 0);
+        const longest = Math.max(headerLen, maxCellLen);
+        const px = Math.min(320, Math.max(80, Math.round(longest * 7.5 + 28)));
+        return `${px}px`;
+      }
+
+      const gridCols = `52px ${shownCols.map(c=>colWidth(c)).join(' ')}${colExtra ? ' 70px' : ''}`;
+
+      const wrap = document.createElement("div");
+      wrap.className = "card-list-wrap";
+
+      const inner = document.createElement("div");
+      inner.className = "card-list-inner";
+
+      const header = document.createElement("div");
+      header.className = "list-header";
+      header.style.gridTemplateColumns = gridCols;
+      header.innerHTML = `
+        <div class="list-cell idx">#</div>
+        ${shownCols.map(c=>`<div class="list-cell" title="${escapeHtml(c.n)}">${escapeHtml(c.n)}</div>`).join('')}
+        ${colExtra ? `<div class="list-cell"></div>` : ''}
+      `;
+
+      const body = document.createElement("div");
+      body.className = "card-list";
+
+      s.rows.forEach(r => {
+        const row = document.createElement("div");
+        row.className = "list-row" + (s.sel === r.__id ? " active" : "");
+        row.style.gridTemplateColumns = gridCols;
+        row.dataset.id = r.__id;
+        row.innerHTML = `
+          <div class="list-cell idx">${r.__id + 1}</div>
+          ${shownCols.map(c=>`<div class="list-cell" title="${escapeHtml(r[c.k]||'')}">${escapeHtml(r[c.k]||'')}</div>`).join('')}
+          ${colExtra ? `<div class="list-cell"><span class="more-cols-chip">+${s.cols.length - MAX_COLS}</span></div>` : ''}
+        `;
+        body.appendChild(row);
+      });
+
+      body.addEventListener("click", (e)=>{
+        const row = e.target.closest("[data-id]");
+        if (!row) return;
+        s.mode = "detail";
+        s.sel = Number(row.dataset.id);
+        render();
+      });
+
+      inner.appendChild(header);
+      inner.appendChild(body);
+      wrap.appendChild(inner);
+      view.innerHTML = "";
+      view.appendChild(wrap);
+    }
+
+    // =========================
+    // UI: Editorial detail view
+    // =========================
+    function renderDetail(s){
+      const row = s.rows.find(r => r.__id === s.sel);
+      if (!row){ s.mode="list"; s.sel=null; render(); return; }
+
+      const title = (row[s.cols[0]?.k] || `Record ${row.__id+1}`).toString();
+
+      const important = ["name","nome","title","titolo","company","azienda","email","mail","phone","telefono","status","stato","owner","responsabile","id"];
+      const scored = s.cols.map(c=>{
+        const n = (c.n||"").toLowerCase();
+        const score = important.some(k=>n.includes(k)) ? 10 : 0;
+        return { c, score };
+      }).sort((a,b)=>b.score-a.score);
+
+      const leftCols  = scored.slice(0, Math.min(14, scored.length)).map(x=>x.c);
+      const rightCols = scored.slice(Math.min(14, scored.length), Math.min(22, scored.length)).map(x=>x.c);
+
+      const root = document.createElement("div");
+      root.className = "detail-wrap";
+      root.innerHTML = `
+        <div class="breadcrumb">
+          <button class="breadcrumb-link" id="breadBack">← ${escapeHtml(sheetName(active))}</button>
+          <span class="breadcrumb-sep">/</span>
+          <span>${escapeHtml(title)}</span>
+        </div>
+
+        <div class="detail-header">
+          <div>
+            <div class="detail-record-num">Record ${String(row.__id+1).padStart(4,"0")} di ${s.rows.length}</div>
+            <div class="detail-title">${escapeHtml(title)}</div>
+          </div>
+          <div class="detail-actions">
+            <button class="btn-action" id="crmCopy">Copia JSON</button>
+            <button class="btn-action" id="crmCopyLink">Copia link</button>
+          </div>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-section">
+            <div class="detail-section-head">Dettagli record</div>
+            <div id="crmLeft"></div>
+          </div>
+
+          <div class="detail-sidebar">
+            <div class="detail-section">
+              <div class="detail-section-head">Campi aggiuntivi</div>
+              <div id="crmRight"></div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-section-head">Note locali</div>
+              <textarea class="notes-area" id="crmNotes" placeholder="Aggiungi note… (salvate solo in questo browser)"></textarea>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const left = root.querySelector("#crmLeft");
+      const right = root.querySelector("#crmRight");
+
+      function addField(container, c){
+        const v = row[c.k] || "";
+        const el = document.createElement("div");
+        el.className = "field-row";
+        el.innerHTML = `
+          <div class="field-key">${escapeHtml(c.n)}</div>
+          <div class="field-val${v ? "" : " empty"}">${escapeHtml(v || "—")}</div>
+        `;
+        container.appendChild(el);
+      }
+
+      leftCols.forEach(c => addField(left, c));
+      (rightCols.length ? rightCols : s.cols.slice(14, 22)).forEach(c => addField(right, c));
+
+      const noteKey = `notes:${active}:${row.__id}`;
+      const notesEl = root.querySelector("#crmNotes");
+      notesEl.value = safeLocalGet(noteKey) || "";
+      notesEl.addEventListener("input", ()=> safeLocalSet(noteKey, notesEl.value));
+
+      root.querySelector("#breadBack").onclick = ()=>{
+        const s = S[active]; s.mode="list"; s.sel=null; render();
+      };
+      root.querySelector("#crmCopy").onclick = async ()=>{
+        try{ await navigator.clipboard.writeText(JSON.stringify(row, null, 2)); setStatus("ok","JSON copiato"); }
+        catch{ setStatus("bad","Clipboard non disponibile"); }
+      };
+      root.querySelector("#crmCopyLink").onclick = async ()=>{
+        const link = `${location.href.split("#")[0]}#sheet=${active}&row=${row.__id}`;
+        try{ await navigator.clipboard.writeText(link); setStatus("ok","Link copiato"); }
+        catch{ setStatus("bad","Clipboard non disponibile"); }
+      };
+
+      view.innerHTML = "";
+      view.appendChild(root);
+    }
+
+    // =========================
+    // Render main
+    // =========================
+    function render(){
+      renderTabs();
+      globalErr.style.display = "none";
+      globalErr.textContent = "";
+
+      const s = S[active];
+      viewTitle.textContent = sheetName(active);
+
+      backBtn.style.display = "none"; // back is handled inside renderDetail breadcrumb
+      openSheetBtn.style.display = s.url.trim() ? "inline-block" : "none";
+
+      if (!s.url.trim()){
+        viewMeta.textContent = "Incolla un URL per questa lista.";
+        view.innerHTML = `<div class="muted">Nessun URL inserito.</div>`;
+        return;
+      }
+
+      if (!s.loaded){
+        viewMeta.textContent = "Non caricato";
+        view.innerHTML = `<div class="muted">Premi <b>Carica</b>.</div>`;
+        return;
+      }
+
+      viewMeta.textContent = `${s.rows.length} record`;
+
+      if (s.mode === "detail") renderDetail(s);
+      else renderList(s);
+    }
+
+    // =========================
+    // Auto-refresh (only active sheet)
+    // =========================
+    function startRefresh(){
+      stopRefresh();
+      timer = setInterval(async ()=>{
+        if (document.hidden) return;
+        const s = S[active];
+        if (!s.url.trim() || !s.loaded) return;
+
+        try{
+          const { changed } = await loadSheet(active, true);
+          if (changed){
+            setStatus("ok", `Aggiornato: ${sheetName(active)} • ${new Date().toLocaleTimeString()}`);
+            render();
+          }
+        } catch(e) {
+          console.warn(
+            `[polling] Aggiornamento automatico fallito per "${sheetName(active)}".\n` +
+            `  Errore: ${e?.message || e}\n` +
+            `  Il polling riproverà al prossimo intervallo (${REFRESH_MS/1000}s).`
+          );
+          // soft: non mostriamo errore in UI durante il polling silenzioso
+        }
+      }, REFRESH_MS);
+    }
+    function stopRefresh(){
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    function applyPollingFromUI(){
+      const sec = Math.max(10, Number(pollSecInput.value || 60));
+      pollSecInput.value = sec;
+      REFRESH_MS = sec * 1000;
+      startRefresh();
+      setStatus(null, `Polling impostato: ${sec}s`);
+    }
+
+    // =========================
+    // Inputs (Nome + URL)
+    // =========================
+    for (let i=0;i<MAX_SHEETS;i++){
+      const d = document.createElement("div");
+      d.className = "field-group";
+      d.innerHTML = `
+        <div class="field-label">Sorgente ${i+1} — Nome</div>
+        <input id="n${i}" placeholder="es. Clienti, Lead, Ordini…" />
+        <div class="field-label" style="margin-top:6px">URL Google Sheet</div>
+        <input id="u${i}" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" />
+      `;
+      inputs.appendChild(d);
+
+      const nameEl = $("n"+i);
+      const urlEl = $("u"+i);
+
+      nameEl.addEventListener("input", (e)=>{
+        S[i].label = e.target.value;
+        renderTabs();
+        if (i===active) render();
+      });
+
+      urlEl.addEventListener("input", (e)=>{
+        S[i].url = e.target.value;
+        // invalidate
+        S[i].loaded = false; S[i].cols=[]; S[i].rows=[]; S[i].sig="";
+        S[i].mode="list"; S[i].sel=null;
+        renderTabs();
+        if (i===active) render();
+      });
+    }
+
+    // =========================
+    // Buttons
+    // =========================
+    $("load").onclick = async ()=>{
+      setStatus(null, "Carico…");
+      globalErr.style.display = "none";
+      globalErr.textContent = "";
+
+      const any = S.some(s=>s.url.trim());
+      if (!any){
+        setStatus("bad","Nessun URL");
+        globalErr.textContent = "Inserisci almeno un URL prima di caricare.";
+        globalErr.style.display = "block";
+        return;
+      }
+
+      let ok = 0, bad = 0;
+      await Promise.all(S.map(async (s,i)=>{
+        if (!s.url.trim()) return;
+        try{
+          await loadSheet(i, false);
+          ok++;
+        } catch(e){
+          s.loaded = false;
+          s.error = e?.message || "Errore";
+          bad++;
+        }
+      }));
+
+      if (!S[active].loaded){
+        const first = S.findIndex(x=>x.loaded);
+        if (first>=0) active = first;
+      }
+
+      if (ok && !bad) setStatus("ok", `Caricati ${ok} fogli`);
+      else if (ok && bad) setStatus(null, `Caricati ${ok}, errori ${bad}`);
+      else setStatus("bad", "Errore caricamento");
+
+      const errs = S.filter(x=>x.url.trim() && !x.loaded).map((x)=>`${sheetName(x.idx)}: ${x.error || "Errore"}`);
+      if (errs.length){
+        globalErr.innerHTML = `<strong>Alcuni fogli non sono leggibili:</strong><br>${errs.map(e=>escapeHtml(e)).join("<br>")}`;
+        globalErr.style.display = "block";
+      }
+
+      render();
+      startRefresh();
+    };
+
+    $("reset").onclick = ()=>{
+      stopRefresh();
+      for (let i=0;i<MAX_SHEETS;i++){
+        S[i].url=""; S[i].label="";
+        S[i].cols=[]; S[i].rows=[]; S[i].loaded=false; S[i].error="";
+        S[i].mode="list"; S[i].sel=null; S[i].sig="";
+        const u = $("u"+i); if (u) u.value = "";
+        const n = $("n"+i); if (n) n.value = "";
+      }
+      active = 0;
+      setStatus(null,"In attesa");
+      globalErr.style.display="none";
+      render();
+      startRefresh();
+    };
+
+    backBtn.onclick = ()=>{
+      const s = S[active];
+      s.mode = "list";
+      s.sel = null;
+      render();
+    };
+
+    openSheetBtn.onclick = ()=>{
+      const u = S[active].url.trim();
+      if (u) window.open(u, "_blank", "noopener,noreferrer");
+    };
+
+    pollSecInput.addEventListener("change", applyPollingFromUI);
+    pollSecInput.addEventListener("blur", applyPollingFromUI);
+
+    // deep link support: #sheet=1&row=12
+    function applyHash(){
+      const h = location.hash.replace(/^#/, "");
+      if (!h) return;
+      const params = new URLSearchParams(h);
+      const si = Number(params.get("sheet"));
+      const ri = Number(params.get("row"));
+      if (!Number.isNaN(si) && si>=0 && si<MAX_SHEETS) active = si;
+      if (!Number.isNaN(ri) && ri>=0){
+        S[active].mode = "detail";
+        S[active].sel = ri;
+      }
+    }
+    window.addEventListener("hashchange", ()=>{ applyHash(); render(); });
+
+    // boot
+    applyHash();
+    render();
+    applyPollingFromUI(); // sets REFRESH_MS + starts refresh
+  </script>
+</body>
+</html>

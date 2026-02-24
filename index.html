@@ -1,61 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Demo Navigation</title>
+    <title>AI Voice CRM — Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0e0f14;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 2rem;
+        .hero {
+            text-align: center;
+            margin-bottom: 52px;
         }
-        .nav-container {
+        .hero-label {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #6366f1;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .hero-title {
+            font-size: 38px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin-bottom: 12px;
+        }
+        .hero-sub {
+            font-size: 14px;
+            color: #71717a;
+            max-width: 380px;
+            line-height: 1.6;
+        }
+        .systems {
             display: flex;
-            gap: 1.5rem;
+            gap: 24px;
             flex-wrap: wrap;
             justify-content: center;
         }
-        .nav-button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1.1rem;
+        .system-card {
+            width: 260px;
+            border-radius: 16px;
+            overflow: hidden;
             text-decoration: none;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.18s, box-shadow 0.18s;
+            display: flex;
+            flex-direction: column;
         }
-        .nav-button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
+        .system-card:hover { transform: translateY(-4px); }
+
+        /* System 1 — Light */
+        .system-card.light {
+            background: #fff;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
-        .nav-button.dark {
-            background-color: #343a40;
+        .system-card.light:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.16); }
+        .system-card.light .card-preview {
+            background: linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%);
+            height: 110px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .nav-button.unique {
-            background-color: #dc3545;
+        .system-card.light .card-badge {
+            width: 52px; height: 52px; border-radius: 14px;
+            background: #fff; border: 2px solid #e4e4e7;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
+        .system-card.light .card-body { padding: 20px; }
+        .system-card.light .card-number {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: #a1a1aa; margin-bottom: 6px;
+        }
+        .system-card.light .card-title {
+            font-size: 17px; font-weight: 700; color: #18181b;
+            margin-bottom: 6px; letter-spacing: -0.01em;
+        }
+        .system-card.light .card-desc { font-size: 12px; color: #71717a; line-height: 1.5; }
+        .system-card.light .card-cta {
+            margin-top: 18px; padding: 9px 0; border-radius: 8px;
+            background: #18181b; color: #fff; text-align: center;
+            font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+        }
+
+        /* System 2 — Dark */
+        .system-card.dark {
+            background: #15161a;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        }
+        .system-card.dark:hover {
+            box-shadow: 0 12px 40px rgba(99,102,241,0.28);
+            border-color: rgba(99,102,241,0.4);
+        }
+        .system-card.dark .card-preview {
+            background: linear-gradient(135deg, #1c1d22 0%, #23242a 100%);
+            height: 110px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .system-card.dark .card-badge {
+            width: 52px; height: 52px; border-radius: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+        }
+        .system-card.dark .card-body { padding: 20px; }
+        .system-card.dark .card-number {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: #6366f1; margin-bottom: 6px;
+        }
+        .system-card.dark .card-title {
+            font-size: 17px; font-weight: 700; color: #e8e8ec;
+            margin-bottom: 6px; letter-spacing: -0.01em;
+        }
+        .system-card.dark .card-desc { font-size: 12px; color: #71717a; line-height: 1.5; }
+        .system-card.dark .card-cta {
+            margin-top: 18px; padding: 9px 0; border-radius: 8px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+            text-align: center; font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+        }
+        .footer-note { margin-top: 48px; font-size: 11px; color: #3f3f46; letter-spacing: 0.04em; }
     </style>
 </head>
 <body>
-    <h1>Select Demo Page</h1>
-    <div class="nav-container">
-        <a href="crm-unified.html" class="nav-button" style="background-color:#6366f1">Unified CRM + AI</a>
-        <a href="crm-light.html" class="nav-button">Light CRM</a>
-        <a href="crm-dark.html" class="nav-button dark">Dark CRM</a>
-        <a href="demo-uniaque.html" class="nav-button unique">Demo Uniacque</a>
+    <div class="hero">
+        <div class="hero-label">AI Voice CRM · Demo</div>
+        <div class="hero-title">Scegli il sistema</div>
+        <div class="hero-sub">Seleziona la versione del CRM che vuoi utilizzare per la demo.</div>
     </div>
+
+    <div class="systems">
+        <a href="crm-light.html" class="system-card light">
+            <div class="card-preview"><div class="card-badge">☀️</div></div>
+            <div class="card-body">
+                <div class="card-number">System 1</div>
+                <div class="card-title">Light Mode</div>
+                <div class="card-desc">Interfaccia chiara, ideale per ambienti luminosi e presentazioni formali.</div>
+                <div class="card-cta">Apri System 1 →</div>
+            </div>
+        </a>
+
+        <a href="crm-unified.html" class="system-card dark">
+            <div class="card-preview"><div class="card-badge">🌙</div></div>
+            <div class="card-body">
+                <div class="card-number">System 2</div>
+                <div class="card-title">Dark Mode</div>
+                <div class="card-desc">Interfaccia scura con AI Voice Assistant integrato, ottimizzata per demo live.</div>
+                <div class="card-cta">Apri System 2 →</div>
+            </div>
+        </a>
+    </div>
+
+    <div class="footer-note">Powered by ElevenLabs + Google Sheets</div>
 </body>
 </html>

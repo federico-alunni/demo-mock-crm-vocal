@@ -962,8 +962,8 @@
     <!-- ════════════ TOPBAR ════════════ -->
     <div class="topbar">
       <div class="topbar-brand">
-        <div class="logo-icon">U</div>
-        <span>Uniacque CRM</span>
+        <div class="logo-icon" id="brandLogoIcon">U</div>
+        <span id="brandName">CRM</span>
         <span class="topbar-badge">Demo</span>
       </div>
       <div class="topbar-center"></div>
@@ -1031,9 +1031,29 @@
                 entità separate.
               </div>
             </div>
+            <div class="field-group" style="margin-top:14px">
+              <div class="field-label">ElevenLabs Agent ID</div>
+              <input
+                type="text"
+                id="agentIdInput"
+                placeholder="agent_xxxxxxxxxxxxxxxx"
+                style="font-size: 13px; padding: 11px 14px"
+              />
+            </div>
             <div class="config-toolbar">
               <button class="primary" id="load">Carica dati</button>
               <button id="reset">Azzera</button>
+              <div class="poll-group">
+                <span>Auto-refresh</span>
+                <input
+                  id="pollSec"
+                  type="number"
+                  min="2"
+                  step="1"
+                  value="10"
+                />
+                <span>sec</span>
+              </div>
             </div>
             <div id="globalErr" class="err-box" style="display: none"></div>
           </div>
@@ -1117,12 +1137,20 @@
 
     <script>
       // =========================
+      // Config
+      // =========================
+      let REFRESH_MS = 10000;
+      const DEFAULT_AGENT_ID = "agent_4101khy0hyaeff9s99f193qamwp5";
+
+      // =========================
       // State
       // =========================
       // S = array of sheets discovered from the single spreadsheet
       let S = [];
       let SPREADSHEET_ID = null;
+      let SPREADSHEET_TITLE = null;
       let active = 0;
+      let timer = null;
 
       // =========================
       // DOM refs
@@ -1136,6 +1164,7 @@
       const viewMeta = $("viewMeta");
       const backBtn = $("back");
       const globalErr = $("globalErr");
+      const pollSecInput = $("pollSec");
       const mainArea = $("mainArea");
       const assistantPanel = $("assistantPanel");
       const navOpenSheet = $("navOpenSheet");
@@ -1217,6 +1246,19 @@
       const GSHEETS_API_KEY = "AIzaSyAVpHLTY1NgIFr76Kx6f48moncg9WDt1C8";
       const SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 
+      // =========================
+      // Agent ID helpers
+      // =========================
+      function getAgentId() {
+        return $("agentIdInput").value.trim() || DEFAULT_AGENT_ID;
+      }
+      function applyAgentId() {
+        const id = getAgentId();
+        const el = document.querySelector("elevenlabs-convai");
+        if (el) el.setAttribute("agent-id", id);
+        safeLocalSet("agentId", id);
+      }
+
       function hash32(str) {
         let h = 2166136261;
         for (let i = 0; i < str.length; i++) {
@@ -1244,10 +1286,10 @@
       }
 
       // =========================
-      // Sheets API v4 — discover all sheet titles
+      // Sheets API v4 — discover all sheet titles + file title
       // =========================
       async function discoverSheets(spreadsheetId) {
-        const url = `${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties.title&key=${GSHEETS_API_KEY}`;
+        const url = `${SHEETS_BASE}/${spreadsheetId}?fields=properties.title,sheets.properties.title&key=${GSHEETS_API_KEY}`;
         let resp;
         try {
           resp = await fetch(url);
@@ -1262,6 +1304,13 @@
           );
         }
         const data = await resp.json();
+        SPREADSHEET_TITLE = data?.properties?.title || null;
+        if (SPREADSHEET_TITLE) {
+          $("brandName").textContent = SPREADSHEET_TITLE;
+          const initial = SPREADSHEET_TITLE.trim()[0]?.toUpperCase() || "S";
+          $("brandLogoIcon").textContent = initial;
+          document.title = SPREADSHEET_TITLE;
+        }
         const sheets = data?.sheets || [];
         if (!sheets.length) throw new Error("Nessun foglio trovato nel file.");
         return sheets.map((s) => s.properties.title);
@@ -1636,6 +1685,8 @@
           return;
         }
 
+        applyAgentId();
+        stopRefresh();
         setStatus(null, "Scopro i fogli…");
         globalErr.style.display = "none";
 
@@ -1706,17 +1757,23 @@
         }
 
         render();
+        applyPollingFromUI();
         if (ok > 0) $("configPanel").open = false;
       };
 
       $("reset").onclick = () => {
+        stopRefresh();
         S = [];
         SPREADSHEET_ID = null;
+        SPREADSHEET_TITLE = null;
         sheetUrlInput.value = "";
         active = 0;
         setStatus(null, "In attesa");
         globalErr.style.display = "none";
         $("refreshBtn").style.display = "none";
+        $("brandName").textContent = "CRM";
+        $("brandLogoIcon").textContent = "U";
+        document.title = "Uniacque CRM — AI Voice Assistant";
         render();
       };
 
@@ -1730,6 +1787,37 @@
       sheetUrlInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") $("load").click();
       });
+
+      // =========================
+      // Polling / Auto-refresh
+      // =========================
+      function startRefresh() {
+        stopRefresh();
+        timer = setInterval(async () => {
+          if (document.hidden) return;
+          const s = S[active];
+          if (!SPREADSHEET_ID || !s || !s.loaded) return;
+          try {
+            const { changed } = await loadSheet(active, true);
+            if (changed) {
+              setStatus("ok", `Aggiornato: ${sheetName(active)} · ${new Date().toLocaleTimeString()}`);
+              render();
+            }
+          } catch (e) {
+            console.warn(`[polling] Errore: ${e?.message}`);
+          }
+        }, REFRESH_MS);
+      }
+      function stopRefresh() {
+        if (timer) clearInterval(timer);
+        timer = null;
+      }
+      function applyPollingFromUI() {
+        const sec = Math.max(2, Number(pollSecInput.value || 10));
+        pollSecInput.value = sec;
+        REFRESH_MS = sec * 1000;
+        if (SPREADSHEET_ID) startRefresh();
+      }
 
       // Manual refresh
       $("refreshBtn").onclick = async () => {
@@ -1754,6 +1842,9 @@
         }
       };
 
+      pollSecInput.addEventListener("change", applyPollingFromUI);
+      pollSecInput.addEventListener("blur", applyPollingFromUI);
+
       // Deep link support
       function applyHash() {
         const h = location.hash.replace(/^#/, "");
@@ -1773,6 +1864,9 @@
       });
 
       // Boot
+      const savedAgent = safeLocalGet("agentId");
+      if (savedAgent) $("agentIdInput").value = savedAgent;
+      applyAgentId();
       applyHash();
       render();
     </script>

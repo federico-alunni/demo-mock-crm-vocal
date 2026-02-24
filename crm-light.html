@@ -1,1169 +1,610 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DataView — Sheets Viewer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg: #f7f5f2;
-      --surface: #ffffff;
-      --surface2: #f0ede8;
-      --border: #e2ddd6;
-      --border2: #ccc8c0;
-      --txt: #1a1814;
-      --txt2: #5c574f;
-      --txt3: #9c968d;
-      --accent: #c8401e;
-      --accent2: #e8f0fe;
-      --ok: #1a7a4a;
-      --bad: #c8401e;
-      --r: 4px;
-      --sans: 'IBM Plex Sans', system-ui, sans-serif;
-      --serif: 'Libre Baskerville', Georgia, serif;
-      --mono: 'IBM Plex Mono', monospace;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;background:var(--bg);color:var(--txt)}
-    body{font-family:var(--sans);font-size:13px;line-height:1.5}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CRM  AI Voice Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f4f5f7;
+        --surface: #ffffff;
+        --surface2: #f0f1f4;
+        --surface3: #e8e9ee;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.14);
+        --txt: #111118;
+        --txt2: #52525b;
+        --txt3: #a1a1aa;
+        --accent: #6366f1;
+        --accent-soft: rgba(99, 102, 241, 0.1);
+        --accent-glow: rgba(99, 102, 241, 0.2);
+        --green: #16a34a;
+        --red: #dc2626;
+        --r: 10px;
+        --sans: "Inter", system-ui, sans-serif;
+        --mono: "JetBrains Mono", monospace;
+        --sidebar-w: 240px;
+        --topbar-h: 52px;
+        --assistant-w: 380px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; background: var(--bg); color: var(--txt); }
+      body { font-family: var(--sans); font-size: 13px; line-height: 1.5; overflow: hidden; }
 
-    /* ── Top bar ── */
-    .topbar{
-      background:var(--txt);
-      color:#f7f5f2;
-      padding:0 24px;
-      display:flex;align-items:center;gap:16px;
-      height:48px;
-      position:sticky;top:0;z-index:100;
-    }
-    .topbar-logo{
-      font-family:var(--serif);
-      font-size:15px;
-      letter-spacing:-.01em;
-      color:#fff;
-      display:flex;align-items:center;gap:8px;
-    }
-    .topbar-logo span{
-      font-size:10px;
-      background:var(--accent);
-      color:#fff;
-      padding:2px 6px;
-      border-radius:2px;
-      font-family:var(--mono);
-      letter-spacing:.06em;
-      font-weight:500;
-    }
-    .topbar-right{
-      margin-left:auto;
-      display:flex;align-items:center;gap:10px;
-    }
-    .status-bar{
-      display:flex;align-items:center;gap:6px;
-      font-size:11px;
-      color:rgba(247,245,242,.55);
-      font-family:var(--mono);
-    }
-    .dot{width:6px;height:6px;border-radius:999px;background:rgba(247,245,242,.3)}
-    .dot.ok{background:#4ade80}
-    .dot.bad{background:#f87171}
+      .topbar {
+        height: var(--topbar-h); background: var(--surface);
+        border-bottom: 1px solid var(--border2);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        display: flex; align-items: center; padding: 0 20px;
+        position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--txt); }
+      .topbar-brand .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+      .topbar-badge { font-size: 9px; font-family: var(--mono); background: var(--accent-soft); color: var(--accent); padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+      .topbar-center { flex: 1; }
+      .topbar-right { display: flex; align-items: center; gap: 14px; }
+      .status-pill { display: flex; align-items: center; gap: 7px; font-size: 11px; font-family: var(--mono); color: var(--txt3); background: var(--surface2); border: 1px solid var(--border2); padding: 5px 12px; border-radius: 999px; }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--txt3); flex-shrink: 0; }
+      .status-dot.ok { background: var(--green); box-shadow: 0 0 8px rgba(22,163,74,0.35); }
+      .status-dot.bad { background: var(--red); box-shadow: 0 0 8px rgba(220,38,38,0.35); }
+      .topbar-toggle-assistant { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 6px; }
+      .topbar-toggle-assistant:hover { background: var(--accent); color: #fff; }
+      .topbar-toggle-assistant .mic-icon { font-size: 14px; }
 
-    /* ── Layout ── */
-    .shell{display:flex;min-height:calc(100vh - 48px)}
+      .sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border2); position: fixed; top: var(--topbar-h); bottom: 0; left: 0; overflow-y: auto; z-index: 90; display: flex; flex-direction: column; }
+      .sidebar-section { padding: 16px 14px 8px; }
+      .sidebar-label { font-size: 9px; font-family: var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt3); margin-bottom: 8px; padding: 0 8px; }
+      .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--txt2); transition: background 0.12s, color 0.12s; border: none; background: none; width: 100%; text-align: left; font-family: var(--sans); }
+      .nav-item:hover { background: var(--surface2); color: var(--txt); }
+      .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+      .nav-badge { font-size: 10px; font-family: var(--mono); background: var(--surface3); padding: 2px 7px; border-radius: 999px; color: var(--txt3); }
+      .nav-item.active .nav-badge { background: var(--accent-soft); color: var(--accent); }
+      .nav-icon { font-size: 15px; margin-right: 8px; opacity: 0.7; }
+      .sidebar-footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--border2); }
+      .sidebar-footer-text { font-size: 10px; color: var(--txt3); font-family: var(--mono); text-align: center; line-height: 1.6; }
 
-    /* ── Sidebar ── */
-    .sidebar{
-      width:220px;flex-shrink:0;
-      border-right:1px solid var(--border);
-      background:var(--surface);
-      padding:20px 0;
-      position:sticky;top:48px;height:calc(100vh - 48px);
-      overflow-y:auto;
-    }
-    .sidebar-section{
-      padding:0 16px;
-      margin-bottom:24px;
-    }
-    .sidebar-label{
-      font-family:var(--mono);
-      font-size:9px;letter-spacing:.12em;
-      text-transform:uppercase;
-      color:var(--txt3);
-      margin-bottom:8px;
-      padding-bottom:6px;
-      border-bottom:1px solid var(--border);
-    }
-    .nav-item{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:7px 10px;
-      border-radius:var(--r);
-      cursor:pointer;
-      font-size:12px;
-      color:var(--txt2);
-      transition:background .1s,color .1s;
-      border:none;background:none;width:100%;text-align:left;
-    }
-    .nav-item:hover{background:var(--surface2);color:var(--txt)}
-    .nav-item.active{
-      background:var(--txt);color:#fff;
-    }
-    .nav-badge{
-      font-size:10px;
-      font-family:var(--mono);
-      opacity:.6;
-    }
-    .nav-item.active .nav-badge{opacity:.5}
+      .shell { display: flex; margin-top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); }
+      .main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; padding: 24px 28px; overflow-y: auto; transition: margin-right 0.3s ease; }
+      .main.assistant-open { margin-right: var(--assistant-w); }
 
-    /* ── Main area ── */
-    .main{flex:1;padding:28px 32px;min-width:0}
+      .config-panel { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); margin-bottom: 20px; overflow: hidden; }
+      .config-panel summary { padding: 12px 18px; cursor: pointer; user-select: none; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--mono); color: var(--txt2); list-style: none; display: flex; align-items: center; gap: 8px; transition: background 0.12s; }
+      .config-panel summary:hover { background: var(--surface2); }
+      .config-panel[open] summary { background: var(--surface2); border-bottom: 1px solid var(--border2); }
+      .config-panel summary::before { content: ""; font-size: 10px; transition: transform 0.15s; color: var(--txt3); }
+      .config-panel[open] summary::before { transform: rotate(90deg); }
+      .config-body { padding: 18px; }
+      .field-group { display: flex; flex-direction: column; gap: 5px; }
+      .field-label { font-size: 10px; font-family: var(--mono); color: var(--txt3); letter-spacing: 0.06em; text-transform: uppercase; }
+      input[type="text"], input[type="url"], input[type="number"] { border: 1px solid var(--border2); border-radius: 8px; background: var(--surface2); color: var(--txt); padding: 9px 12px; font-size: 12px; font-family: var(--sans); width: 100%; outline: none; transition: border-color 0.15s, background 0.15s; }
+      input:focus { border-color: var(--accent); background: var(--surface3); }
+      input::placeholder { color: var(--txt3); }
+      .config-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border2); }
+      button { cursor: pointer; font-family: var(--sans); font-size: 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2); color: var(--txt2); padding: 8px 18px; font-weight: 500; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+      button:hover { background: var(--surface3); color: var(--txt); }
+      button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+      button.primary:hover { background: #5558e6; }
+      .poll-group { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--txt3); margin-left: auto; font-family: var(--mono); }
+      .poll-group input { width: 60px; padding: 6px 8px; text-align: center; }
+      .err-box { margin-top: 12px; border: 1px solid rgba(220,38,38,0.25); background: rgba(220,38,38,0.05); color: #b91c1c; padding: 12px 14px; border-radius: 8px; font-size: 12px; }
 
-    /* ── Config panel ── */
-    .config-panel{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      margin-bottom:24px;
-      overflow:hidden;
-    }
-    .config-panel summary{
-      padding:12px 16px;
-      cursor:pointer;
-      user-select:none;
-      font-size:11px;
-      font-weight:600;
-      letter-spacing:.04em;
-      text-transform:uppercase;
-      font-family:var(--mono);
-      color:var(--txt2);
-      border-bottom:1px solid transparent;
-      list-style:none;
-      display:flex;align-items:center;gap:8px;
-    }
-    .config-panel[open] summary{
-      border-bottom-color:var(--border);
-      background:var(--surface2);
-    }
-    .config-panel summary::before{content:'▶';font-size:8px;transition:transform .15s}
-    .config-panel[open] summary::before{transform:rotate(90deg)}
-    .config-body{padding:16px}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:900px){.grid{grid-template-columns:repeat(5,1fr)}}
+      .view-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border2); }
+      .view-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--txt); }
+      .view-meta { font-size: 11px; color: var(--txt3); font-family: var(--mono); }
+      .view-actions { margin-left: auto; display: flex; gap: 8px; }
 
-    .field-group{display:flex;flex-direction:column;gap:4px}
-    .field-label{font-size:10px;font-family:var(--mono);color:var(--txt3);letter-spacing:.06em;text-transform:uppercase}
-    input{
-      border:1px solid var(--border2);
-      border-radius:var(--r);
-      background:var(--bg);
-      color:var(--txt);
-      padding:8px 10px;
-      font-size:12px;
-      font-family:var(--sans);
-      width:100%;
-      outline:none;
-      transition:border-color .15s;
-    }
-    input:focus{border-color:var(--txt);background:#fff}
+      .table-wrap { border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+      .table-scroll { max-height: 560px; overflow: auto; }
+      table.data { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+      table.data thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); border-bottom: 1px solid var(--border2); color: var(--txt3); text-align: left; padding: 10px 14px; white-space: nowrap; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+      table.data tbody td { border-bottom: 1px solid var(--border); padding: 10px 14px; vertical-align: top; color: var(--txt); max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      table.data tbody tr { cursor: pointer; transition: background 0.08s; }
+      table.data tbody tr:hover { background: var(--surface2); }
+      table.data tbody tr.active { background: var(--accent-soft); outline: 1px solid var(--accent); outline-offset: -1px; }
+      .row-idx { width: 48px; color: var(--txt3) !important; font-family: var(--mono); font-size: 11px; }
+      .col-chip { display: inline-flex; padding: 2px 7px; background: var(--surface3); border: 1px solid var(--border2); border-radius: 999px; font-size: 10px; font-family: var(--mono); color: var(--txt3); }
 
-    .toolbar{
-      display:flex;gap:8px;align-items:center;
-      flex-wrap:wrap;
-      margin-top:14px;
-      padding-top:14px;
-      border-top:1px solid var(--border);
-    }
-    button{
-      cursor:pointer;
-      font-family:var(--sans);
-      font-size:12px;
-      border-radius:var(--r);
-      border:1px solid var(--border2);
-      background:var(--surface);
-      color:var(--txt);
-      padding:8px 16px;
-      transition:background .1s, border-color .1s;
-    }
-    button:hover{background:var(--surface2)}
-    button.primary{
-      background:var(--txt);
-      color:#fff;
-      border-color:var(--txt);
-      font-weight:600;
-    }
-    button.primary:hover{background:#333}
+      .detail-wrap { animation: slideIn 0.2s ease; }
+      @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--txt3); margin-bottom: 16px; }
+      .breadcrumb-link { color: var(--accent); cursor: pointer; text-decoration: none; background: none; border: none; font-family: var(--mono); font-size: 11px; padding: 0; }
+      .breadcrumb-link:hover { text-decoration: underline; }
+      .breadcrumb-sep { color: var(--txt3); }
 
-    .poll-group{
-      display:flex;align-items:center;gap:6px;
-      font-size:11px;color:var(--txt3);
-      margin-left:auto;
-    }
-    .poll-group input{width:60px;padding:6px 8px}
+      .detail-hero { background: linear-gradient(135deg, var(--surface2) 0%, var(--surface) 100%); border: 1px solid var(--border2); border-radius: var(--r); padding: 22px 26px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; position: relative; overflow: hidden; }
+      .detail-hero::before { content: ""; position: absolute; top: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none; }
+      .detail-hero-left { display: flex; gap: 16px; align-items: center; z-index: 1; }
+      .detail-avatar { width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; box-shadow: 0 4px 20px var(--accent-glow); }
+      .detail-hero-text { min-width: 0; }
+      .detail-record-num { font-family: var(--mono); font-size: 10px; color: var(--txt3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+      .detail-title { font-size: 18px; font-weight: 700; color: var(--txt); letter-spacing: -0.02em; max-width: 50ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .detail-actions { display: flex; gap: 8px; z-index: 1; }
+      .btn-ghost { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--txt2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--sans); transition: background 0.12s, color 0.12s; display: flex; align-items: center; gap: 6px; }
+      .btn-ghost:hover { background: var(--surface2); color: var(--txt); }
 
-    .err{
-      margin-top:12px;
-      border-left:3px solid var(--bad);
-      background:#fff5f5;
-      color:#7f1d1d;
-      padding:10px 14px;
-      border-radius:0 var(--r) var(--r) 0;
-      font-size:12px;
-    }
+      .detail-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+      @media (min-width: 1000px) { .detail-grid { grid-template-columns: 1.5fr 0.5fr; } }
+      .detail-card { border: 1px solid var(--border2); border-radius: var(--r); background: var(--surface); overflow: hidden; }
+      .detail-card-head { padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border2); font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--txt3); font-weight: 600; }
+      .field-row { display: flex; border-bottom: 1px solid var(--border); transition: background 0.08s; }
+      .field-row:last-child { border-bottom: none; }
+      .field-row:hover { background: var(--surface2); }
+      .field-key { width: 160px; flex-shrink: 0; padding: 10px 16px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; color: var(--txt3); border-right: 1px solid var(--border); display: flex; align-items: flex-start; padding-top: 12px; }
+      .field-val { flex: 1; padding: 10px 16px; font-size: 12px; color: var(--txt); word-break: break-word; line-height: 1.6; }
+      .field-val.empty { color: var(--txt3); font-style: italic; }
+      .detail-sidebar-col { display: flex; flex-direction: column; gap: 14px; }
+      .notes-area { width: 100%; min-height: 120px; border: none; border-radius: 0; background: transparent; color: var(--txt); padding: 14px 16px; resize: vertical; font-size: 12px; font-family: var(--sans); line-height: 1.7; outline: none; }
+      .notes-area::placeholder { color: var(--txt3); }
+      .notes-area:focus { background: var(--accent-soft); }
 
-    /* ── View header ── */
-    .view-header{
-      display:flex;align-items:baseline;gap:12px;
-      margin-bottom:18px;
-      padding-bottom:14px;
-      border-bottom:2px solid var(--txt);
-    }
-    .view-title{
-      font-family:var(--serif);
-      font-size:22px;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:var(--txt);
-    }
-    .view-meta{
-      font-size:11px;
-      color:var(--txt3);
-      font-family:var(--mono);
-    }
-    .view-actions{margin-left:auto;display:flex;gap:8px}
-    .btn-open-sheet{
-      font-size:11px;
-      padding:5px 12px;
-      color:var(--txt2);
-      text-decoration:none;
-      border:1px solid var(--border2);
-    }
+      .assistant-panel { width: var(--assistant-w); position: fixed; top: var(--topbar-h); right: 0; bottom: 0; background: var(--surface); border-left: 1px solid var(--border2); z-index: 95; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s ease; box-shadow: -4px 0 24px rgba(0,0,0,0.08); }
+      .assistant-panel.open { transform: translateX(0); }
+      .assistant-header { padding: 16px 18px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+      .assistant-header-left { display: flex; align-items: center; gap: 10px; }
+      .assistant-header-icon { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+      .assistant-header-text h3 { font-size: 14px; font-weight: 600; color: var(--txt); margin: 0; }
+      .assistant-header-text span { font-size: 10px; font-family: var(--mono); color: var(--txt3); letter-spacing: 0.04em; }
+      .assistant-close { background: none; border: none; color: var(--txt3); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.12s; }
+      .assistant-close:hover { background: var(--surface2); color: var(--txt); }
+      .assistant-status { padding: 10px 18px; font-size: 10px; font-family: var(--mono); color: var(--txt3); letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+      .assistant-status .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(22,163,74,0.5); animation: blink 2s ease-in-out infinite; }
+      .assistant-body { flex: 1; display: flex; flex-direction: column; align-items: stretch; justify-content: stretch; padding: 0; min-height: 0; overflow: hidden; }
+      elevenlabs-convai { position: relative; z-index: 1; width: 100%; flex: 1; display: block; min-height: 0; }
+      elevenlabs-convai::part(container), elevenlabs-convai > * { width: 100% !important; height: 100% !important; }
+      .assistant-footer { padding: 12px 18px; border-top: 1px solid var(--border2); flex-shrink: 0; }
+      .assistant-footer-stats { display: flex; gap: 16px; justify-content: center; }
+      .assistant-stat { text-align: center; }
+      .assistant-stat-val { font-size: 14px; font-weight: 700; color: var(--accent); }
+      .assistant-stat-label { font-size: 9px; font-family: var(--mono); color: var(--txt3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
 
-    /* ── Card list (instead of table) ── */
-    .card-list{display:flex;flex-direction:column;gap:1px;background:var(--border)}
-    .card-list-wrap{
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      overflow:auto;
-      max-height:580px;
-    }
+      .empty-state { text-align: center; padding: 60px 20px; color: var(--txt3); }
+      .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+      .empty-state h3 { font-size: 16px; color: var(--txt2); margin-bottom: 8px; font-weight: 600; }
+      .empty-state p { font-size: 12px; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+      .muted { color: var(--txt3); font-size: 11px; }
 
-    .card-list-inner{
-      min-width:max-content;
-      width:100%;
-    }
-
-    .list-header{
-      display:grid;
-      background:var(--surface2);
-      border-bottom:2px solid var(--border2);
-      font-size:10px;
-      font-family:var(--mono);
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      color:var(--txt3);
-      position:sticky;top:0;z-index:2;
-      min-width:max-content;
-      width:100%;
-    }
-    .list-row{
-      display:grid;
-      background:var(--surface);
-      cursor:pointer;
-      transition:background .08s;
-      font-size:12px;
-      min-width:max-content;
-      width:100%;
-    }
-    .list-row:hover{background:#faf8f5}
-    .list-row.active{background:#f0f4ff;outline:2px solid #3b5bdb;outline-offset:-2px}
-
-    .list-cell{
-      padding:10px 14px;
-      white-space:nowrap;
-      border-right:1px solid var(--border);
-    }
-    .list-cell:last-child{border-right:none}
-    .list-cell.idx{
-      color:var(--txt3);
-      font-family:var(--mono);
-      font-size:11px;
-      width:52px;flex-shrink:0;
-    }
-    .more-cols-chip{
-      display:inline-flex;
-      align-items:center;
-      padding:2px 7px;
-      background:var(--surface2);
-      border:1px solid var(--border2);
-      border-radius:2px;
-      font-size:10px;
-      font-family:var(--mono);
-      color:var(--txt3);
-    }
-
-    /* ── Detail view ── */
-    .detail-wrap{
-      animation:slideIn .18s ease;
-    }
-    @keyframes slideIn{
-      from{opacity:0;transform:translateX(8px)}
-      to{opacity:1;transform:translateX(0)}
-    }
-
-    /* Breadcrumb back nav */
-    .breadcrumb{
-      display:flex;align-items:center;gap:6px;
-      font-size:11px;
-      font-family:var(--mono);
-      color:var(--txt3);
-      margin-bottom:20px;
-    }
-    .breadcrumb-link{
-      color:var(--accent);
-      cursor:pointer;
-      text-decoration:underline;
-      text-underline-offset:2px;
-      background:none;border:none;
-      font-family:var(--mono);font-size:11px;
-      padding:0;
-    }
-    .breadcrumb-link:hover{color:#a33318}
-    .breadcrumb-sep{color:var(--border2)}
-
-    /* Detail header */
-    .detail-header{
-      background:var(--txt);
-      color:#f7f5f2;
-      border-radius:var(--r);
-      padding:20px 24px;
-      margin-bottom:16px;
-      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
-      flex-wrap:wrap;
-    }
-    .detail-record-num{
-      font-family:var(--mono);
-      font-size:10px;
-      color:rgba(247,245,242,.4);
-      letter-spacing:.1em;
-      text-transform:uppercase;
-      margin-bottom:6px;
-    }
-    .detail-title{
-      font-family:var(--serif);
-      font-size:20px;
-      font-weight:700;
-      color:#fff;
-      letter-spacing:-.02em;
-      max-width:55ch;
-    }
-    .detail-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .btn-action{
-      padding:7px 14px;
-      border-radius:var(--r);
-      border:1px solid rgba(247,245,242,.2);
-      background:rgba(247,245,242,.07);
-      color:rgba(247,245,242,.75);
-      font-size:11px;
-      font-family:var(--mono);
-      cursor:pointer;
-      transition:background .12s,color .12s;
-    }
-    .btn-action:hover{
-      background:rgba(247,245,242,.15);
-      color:#fff;
-    }
-
-    /* Detail body */
-    .detail-body{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:16px;
-    }
-    @media(min-width:960px){.detail-body{grid-template-columns:1fr 340px}}
-
-    .detail-section{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      overflow:hidden;
-    }
-    .detail-section-head{
-      padding:10px 16px;
-      background:var(--surface2);
-      border-bottom:1px solid var(--border);
-      font-family:var(--mono);
-      font-size:10px;
-      letter-spacing:.1em;
-      text-transform:uppercase;
-      color:var(--txt3);
-    }
-
-    /* Field rows — horizontal label:value layout */
-    .field-row{
-      display:flex;
-      border-bottom:1px solid var(--border);
-      transition:background .08s;
-    }
-    .field-row:last-child{border-bottom:none}
-    .field-row:hover{background:#faf8f5}
-    .field-key{
-      width:160px;flex-shrink:0;
-      padding:10px 16px;
-      font-family:var(--mono);
-      font-size:10px;
-      letter-spacing:.05em;
-      color:var(--txt3);
-      border-right:1px solid var(--border);
-      display:flex;align-items:flex-start;
-      padding-top:12px;
-    }
-    .field-val{
-      flex:1;
-      padding:10px 16px;
-      font-size:12px;
-      color:var(--txt);
-      word-break:break-word;
-      line-height:1.6;
-    }
-    .field-val.empty{color:var(--txt3);font-style:italic}
-
-    /* Right sidebar */
-    .detail-sidebar{display:flex;flex-direction:column;gap:16px}
-
-    .notes-area{
-      width:100%;
-      min-height:140px;
-      border:none;
-      border-radius:0;
-      background:transparent;
-      color:var(--txt);
-      padding:14px 16px;
-      resize:vertical;
-      font-size:12px;
-      font-family:var(--sans);
-      line-height:1.7;
-      outline:none;
-    }
-    .notes-area::placeholder{color:var(--txt3)}
-
-    .muted{color:var(--txt3);font-size:11px}
-  </style>
-</head>
-
-<body>
-  <!-- Top bar -->
-  <div class="topbar">
-    <div class="topbar-logo">
-      <img src="https://www.vhv.rs/dpng/d/182-1826286_microsoft-dynamics-crm-dynamics-365-logo-hd-png.png" height="50"><br/>
-	<span>v1</span>
-    </div>
-    <div class="topbar-right">
-      <div class="status-bar">
-        <span class="dot" id="dot"></span>
-        <span id="status">In attesa</span>
+      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0 !important; } :root { --assistant-w: 100vw; } }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="topbar-brand">
+        <div class="logo-icon" id="brandLogoIcon">C</div>
+        <span id="brandName">CRM</span>
+        <span class="topbar-badge">Demo</span>
+      </div>
+      <div class="topbar-center"></div>
+      <div class="topbar-right">
+        <div class="status-pill">
+          <span class="status-dot" id="dot"></span>
+          <span id="status">In attesa</span>
+        </div>
+        <button class="topbar-toggle-assistant" id="toggleAssistant">
+          <span class="mic-icon"></span> AI Assistant
+        </button>
       </div>
     </div>
-  </div>
 
-  <div class="shell">
-    <!-- Sidebar navigation -->
-    <nav class="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-label">Sorgenti</div>
-        <div id="tabs"></div>
-      </div>
-    </nav>
+    <div class="shell">
+      <nav class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Entità</div>
+          <div id="tabs"></div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-label">Strumenti</div>
+          <button class="nav-item" id="navConfig" onclick="toggleConfig()">
+            <span><span class="nav-icon"></span> Configurazione</span>
+          </button>
+          <button class="nav-item" id="navOpenSheet" style="display:none" onclick="openCurrentSheet()">
+            <span><span class="nav-icon"></span> Apri Google Sheet</span>
+          </button>
+        </div>
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-text">
+            Powered by ElevenLabs + Google Sheets<br/>
+            <span style="opacity:.7">Powered by BIP Group</span>
+          </div>
+        </div>
+      </nav>
 
-    <!-- Main content -->
-    <main class="main">
+      <main class="main" id="mainArea">
+        <details class="config-panel" id="configPanel" open>
+          <summary> Configurazione sorgente dati</summary>
+          <div class="config-body">
+            <div class="field-group">
+              <div class="field-label">URL Google Sheet (intero file)</div>
+              <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit" style="font-size:13px;padding:11px 14px" />
+              <div class="muted" style="margin-top:6px">Il file deve essere condiviso con <strong style="color:var(--txt2)">"Chiunque abbia il link"</strong>  Visualizzatore.</div>
+            </div>
+            <div class="field-group" style="margin-top:14px">
+              <div class="field-label">ElevenLabs Agent ID</div>
+              <input type="text" id="agentIdInput" placeholder="agent_xxxxxxxxxxxxxxxx" style="font-size:13px;padding:11px 14px" />
+            </div>
+            <div class="config-toolbar">
+              <button class="primary" id="load">Carica dati</button>
+              <button id="reset">Azzera</button>
+              <div class="poll-group">
+                <span>Auto-refresh</span>
+                <input id="pollSec" type="number" min="2" step="1" value="10" />
+                <span>sec</span>
+              </div>
+            </div>
+            <div id="globalErr" class="err-box" style="display:none"></div>
+          </div>
+        </details>
 
-      <!-- Config collapsible -->
-      <details class="config-panel" open>
-        <summary>Configurazione sorgenti</summary>
-        <div class="config-body">
-          <div class="grid" id="inputs"></div>
-          <div class="toolbar">
-            <button class="primary" id="load">Carica dati</button>
-            <button id="reset">Azzera</button>
-            <button id="openSheet" style="display:none">↗ Apri sheet</button>
-            <div class="poll-group">
-              <span>Aggiorna ogni</span>
-              <input id="pollSec" type="number" min="10" step="5" value="60" />
-              <span>sec</span>
+        <div>
+          <div class="view-header">
+            <div class="view-title" id="viewTitle">Nessuna entità</div>
+            <div class="view-meta" id="viewMeta">Configura una sorgente dati per iniziare</div>
+            <div class="view-actions">
+              <button id="refreshBtn" style="display:none"> Aggiorna</button>
+              <button id="back" style="display:none"> Lista</button>
             </div>
           </div>
-          <div id="globalErr" class="err" style="display:none"></div>
-        </div>
-      </details>
-
-      <!-- View area -->
-      <div>
-        <div class="view-header">
-          <div class="view-title" id="viewTitle">Nessun foglio</div>
-          <div class="view-meta" id="viewMeta">Incolla URL e premi Carica</div>
-          <div class="view-actions">
-            <button id="back" style="display:none" class="breadcrumb-link-btn">← Torna alla lista</button>
+          <div id="view">
+            <div class="empty-state">
+              <div class="empty-state-icon"></div>
+              <h3>Nessun dato caricato</h3>
+              <p>Apri la sezione <strong>Configurazione</strong>, incolla l'URL di un Google Sheet pubblico e premi <strong>Carica dati</strong>.</p>
+            </div>
           </div>
         </div>
-        <div id="view"></div>
-      </div>
+      </main>
 
-    </main>
-  </div>
+      <aside class="assistant-panel" id="assistantPanel">
+        <div class="assistant-header">
+          <div class="assistant-header-left">
+            <div class="assistant-header-icon"></div>
+            <div class="assistant-header-text">
+              <h3>AI Voice Assistant</h3>
+              <span>ElevenLabs Conversational AI</span>
+            </div>
+          </div>
+          <button class="assistant-close" id="closeAssistant"></button>
+        </div>
+        <div class="assistant-status">
+          <span class="live-dot"></span>
+          Sistema attivo  Server EU
+        </div>
+        <div class="assistant-body">
+          <elevenlabs-convai agent-id="agent_4101khy0hyaeff9s99f193qamwp5" server-location="eu-residency"></elevenlabs-convai>
+          <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+        </div>
+        <div class="assistant-footer">
+          <div class="assistant-footer-stats">
+            <div class="assistant-stat"><div class="assistant-stat-val">&lt;1s</div><div class="assistant-stat-label">Latenza</div></div>
+            <div class="assistant-stat"><div class="assistant-stat-val">EU</div><div class="assistant-stat-label">Server</div></div>
+            <div class="assistant-stat"><div class="assistant-stat-val">24/7</div><div class="assistant-stat-label">Disponibile</div></div>
+          </div>
+        </div>
+      </aside>
+    </div>
 
-  <script>
-    // =========================
-    // Config dinamica (UI)
-    // =========================
-    const MAX_SHEETS = 5;
-    let REFRESH_MS = 60000;
+    <script>
+      let REFRESH_MS = 10000;
+      const DEFAULT_AGENT_ID = "agent_4101khy0hyaeff9s99f193qamwp5";
+      let S = [], SPREADSHEET_ID = null, SPREADSHEET_TITLE = null, active = 0, timer = null;
 
-    // =========================
-    // State
-    // =========================
-    const S = Array.from({length: MAX_SHEETS}, (_,i)=>({
-      idx:i,
-      url:"",
-      label:"",         // NOME SHEET (leggibile) - inserito dall’utente
-      cols:[],
-      rows:[],
-      loaded:false,
-      error:"",
-      mode:"list",      // list | detail
-      sel:null,
-      sig:""            // signature to skip updates
-    }));
-    let active = 0;
-    let timer = null;
+      const $ = (id) => document.getElementById(id);
+      const tabs = $("tabs"), view = $("view"), statusEl = $("status"), dotEl = $("dot");
+      const viewTitle = $("viewTitle"), viewMeta = $("viewMeta"), backBtn = $("back");
+      const globalErr = $("globalErr"), pollSecInput = $("pollSec");
+      const mainArea = $("mainArea"), assistantPanel = $("assistantPanel");
+      const navOpenSheet = $("navOpenSheet"), sheetUrlInput = $("sheetUrl");
 
-    // =========================
-    // DOM
-    // =========================
-    const $ = (id)=>document.getElementById(id);
-    const inputs = $("inputs");
-    const tabs = $("tabs");
-    const view = $("view");
-    const statusEl = $("status");
-    const dotEl = $("dot");
-    const viewTitle = $("viewTitle");
-    const viewMeta = $("viewMeta");
-    const backBtn = $("back");
-    const openSheetBtn = $("openSheet");
-    const globalErr = $("globalErr");
-    const pollSecInput = $("pollSec");
-
-    // =========================
-    // Helpers
-    // =========================
-    function setStatus(kind, text){
-      dotEl.classList.remove("ok","bad");
-      if (kind === "ok") dotEl.classList.add("ok");
-      if (kind === "bad") dotEl.classList.add("bad");
-      statusEl.textContent = text;
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "").replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[m]));
-    }
-
-    function parseSheetUrl(url){
-      try{
-        const u = new URL(url.trim());
-        const parts = u.pathname.split("/");
-        const di = parts.indexOf("d");
-        const sheetId = di>=0 ? parts[di+1] : null;
-
-        let gid = "0";
-        const m = (u.hash || "").match(/gid=(\d+)/);
-        if (m) gid = m[1];
-        if (u.searchParams.get("gid")) gid = u.searchParams.get("gid");
-        return { sheetId, gid };
-      } catch {
-        return { sheetId:null, gid:"0" };
+      $("toggleAssistant").onclick = () => toggleAssistant();
+      $("closeAssistant").onclick = () => toggleAssistant(false);
+      function toggleAssistant(force) {
+        const open = force !== undefined ? force : !assistantPanel.classList.contains("open");
+        assistantPanel.classList.toggle("open", open);
+        mainArea.classList.toggle("assistant-open", open);
       }
-    }
-
-    function gvizUrl(sheetId, gid){
-      // tqx=out:json fa restituire a GViz un testo tipo:
-      // /*O_o*/\ngoogle.visualization.Query.setResponse({...json...});
-      // che possiamo fetchare e parsare manualmente senza JSONP
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
-    }
-
-    // =========================
-    // Loader GViz via fetch (niente JSONP, niente script tag)
-    // GViz restituisce testo del tipo:
-    //   /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-    // Estraiamo il JSON con una regex e lo parsiamo.
-    // =========================
-    async function loadGvizViaFetch(url){
-      let resp;
-      try {
-        resp = await fetch(url, { credentials: "omit" });
-      } catch(e) {
-        console.error(
-          `[GViz] Errore di rete (fetch).\n` +
-          `  URL: ${url}\n` +
-          `  Errore: ${e?.message}\n` +
-          `  Cause possibili: connessione assente, CORS bloccato, foglio inesistente.`
-        );
-        throw new Error("Errore di rete. Controlla la console per dettagli.");
+      function toggleConfig() { const p = $("configPanel"); p.open = !p.open; }
+      function openCurrentSheet() {
+        if (SPREADSHEET_ID) window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`, "_blank", "noopener,noreferrer");
       }
 
-      if (!resp.ok) {
-        console.error(
-          `[GViz] HTTP ${resp.status} ${resp.statusText}\n` +
-          `  URL: ${url}\n` +
-          `  Causa più comune: foglio privato. Vai su Google Sheets → Condividi → ` +
-          `"Chiunque abbia il link" con ruolo Visualizzatore.`
-        );
-        throw new Error(`HTTP ${resp.status}: foglio non accessibile. Controlla la console.`);
+      function setStatus(kind, text) {
+        dotEl.classList.remove("ok", "bad");
+        if (kind === "ok") dotEl.classList.add("ok");
+        if (kind === "bad") dotEl.classList.add("bad");
+        statusEl.textContent = text;
+      }
+      function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[m]);
+      }
+      function parseSheetUrl(url) {
+        try {
+          const u = new URL(url.trim());
+          const parts = u.pathname.split("/");
+          const di = parts.indexOf("d");
+          const sheetId = di >= 0 ? parts[di + 1] : null;
+          let gid = "0";
+          const m = (u.hash || "").match(/gid=(\d+)/);
+          if (m) gid = m[1];
+          if (u.searchParams.get("gid")) gid = u.searchParams.get("gid");
+          return { sheetId, gid };
+        } catch { return { sheetId: null, gid: "0" }; }
       }
 
-      const text = await resp.text();
-      console.log("[GViz] Risposta grezza (primi 200 char):", text.slice(0, 200));
+      const GSHEETS_API_KEY = "AIzaSyAVpHLTY1NgIFr76Kx6f48moncg9WDt1C8";
+      const SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 
-      // GViz wrappa il JSON in: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-      // Estraiamo tutto ciò che è tra la prima "{" e l'ultima "}"
-      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/);
-      if (!match) {
-        console.error(
-          `[GViz] Impossibile parsare la risposta GViz.\n` +
-          `  Risposta ricevuta: ${text.slice(0, 500)}\n` +
-          `  Cause possibili: foglio privato, ID errato, o Google ha restituito HTML (pagina di login).`
-        );
-        throw new Error("Risposta GViz non parsabile. Controlla la console per dettagli.");
+      function getAgentId() { return $("agentIdInput").value.trim() || DEFAULT_AGENT_ID; }
+      function applyAgentId() {
+        const id = getAgentId();
+        const el = document.querySelector("elevenlabs-convai");
+        if (el) el.setAttribute("agent-id", id);
+        safeLocalSet("agentId", id);
+      }
+      function hash32(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+        return (h >>> 0).toString(16);
+      }
+      function safeLocalGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+      function safeLocalSet(key, val) { try { localStorage.setItem(key, val); } catch {} }
+      function sheetName(i) { return S[i]?.label || `Foglio ${i + 1}`; }
+
+      async function discoverSheets(spreadsheetId) {
+        const url = `${SHEETS_BASE}/${spreadsheetId}?fields=properties.title,sheets.properties.title&key=${GSHEETS_API_KEY}`;
+        let resp;
+        try { resp = await fetch(url); } catch (e) { throw new Error("Errore di rete. Verifica la connessione."); }
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          const msg = body?.error?.message || `HTTP ${resp.status}`;
+          throw new Error(`Impossibile leggere il file (${msg}). Assicurati che sia condiviso con "Chiunque abbia il link"  Visualizzatore.`);
+        }
+        const data = await resp.json();
+        SPREADSHEET_TITLE = data?.properties?.title || null;
+        if (SPREADSHEET_TITLE) {
+          $("brandName").textContent = SPREADSHEET_TITLE;
+          $("brandLogoIcon").textContent = SPREADSHEET_TITLE.trim()[0]?.toUpperCase() || "C";
+          document.title = SPREADSHEET_TITLE;
+        }
+        const sheets = data?.sheets || [];
+        if (!sheets.length) throw new Error("Nessun foglio trovato nel file.");
+        return sheets.map((s) => s.properties.title);
       }
 
-      let data;
-      try {
-        data = JSON.parse(match[1]);
-      } catch(e) {
-        console.error("[GViz] JSON.parse fallito:", e.message, "\n  Testo:", match[1].slice(0, 300));
-        throw new Error("Errore parsing JSON GViz. Controlla la console.");
+      async function loadSheet(i, silent = false) {
+        const s = S[i];
+        s.error = "";
+        if (!SPREADSHEET_ID || !s.label) return { changed: false };
+        const url = `${SHEETS_BASE}/${SPREADSHEET_ID}/values/${encodeURIComponent(s.label)}?key=${GSHEETS_API_KEY}`;
+        let resp;
+        try { resp = await fetch(url); } catch (e) { throw new Error(`Errore di rete per il foglio "${s.label}".`); }
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          throw new Error(body?.error?.message || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        const values = data?.values || [];
+        const sig = hash32(JSON.stringify(values));
+        if (sig === s.sig) return { changed: false };
+        s.sig = sig;
+        if (values.length < 1) throw new Error(`Il foglio "${s.label}" è vuoto.`);
+        const headers = values[0].map((h, i) => ({ k: "c" + i, n: String(h || `Col ${i + 1}`).trim() }));
+        const rows = values.slice(1).map((row, ri) => {
+          const o = { __id: ri };
+          headers.forEach((col, ci) => { o[col.k] = String(row[ci] ?? ""); });
+          return o;
+        }).filter((r) => headers.some((c) => r[c.k] && r[c.k].trim()));
+        if (!headers.length) throw new Error(`Nessuna colonna trovata in "${s.label}".`);
+        s.cols = headers; s.rows = rows; s.loaded = true;
+        if (!silent) setStatus("ok", `${s.label}  ${rows.length} record`);
+        return { changed: true };
       }
 
-      return data;
-    }
-
-    function tableToRows(resp){
-      const t = resp?.table;
-      if (!t?.cols || !t?.rows) return { cols:[], rows:[] };
-
-      // La prima riga del foglio è l'intestazione della tabella
-      const firstRow = t.rows[0];
-      const dataRows = t.rows.slice(1);
-
-      const cols = t.cols.map((c,i)=>{
-        // Usa il valore della prima riga come nome colonna, fallback su label GViz o "Col N"
-        const headerCell = firstRow?.c?.[i];
-        const headerVal = (headerCell?.f ?? headerCell?.v ?? "");
-        const name = (headerVal && String(headerVal).trim())
-          ? String(headerVal).trim()
-          : (c.label && String(c.label).trim()) ? c.label : `Col ${i+1}`;
-        return { k:"c"+i, n:name, type:c.type || "string" };
-      });
-
-      const rows = dataRows.map((r,ri)=>{
-        const o = { __id: ri };
-        (r.c || []).forEach((cell,i)=>{
-          const v = (cell?.f ?? cell?.v ?? "");
-          o["c"+i] = String(v);
+      function renderTabs() {
+        tabs.innerHTML = "";
+        S.forEach((s, i) => {
+          const b = document.createElement("button");
+          b.className = "nav-item" + (i === active ? " active" : "");
+          const badge = s.loaded ? `<span class="nav-badge">${s.rows.length}</span>` : "";
+          const icon = s.loaded ? "" : "";
+          b.innerHTML = `<span><span class="nav-icon">${icon}</span> ${escapeHtml(sheetName(i))}</span>${badge}`;
+          b.onclick = () => { active = i; S[i].mode = "list"; S[i].sel = null; render(); };
+          tabs.appendChild(b);
         });
-        return o;
-      });
-
-      return { cols, rows };
-    }
-
-    function hash32(str){
-      let h = 2166136261;
-      for (let i=0;i<str.length;i++){
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return (h>>>0).toString(16);
-    }
-
-
-    // Wrapper sicuro per localStorage (può fallire in Safari privato o iframe cross-origin)
-    function safeLocalGet(key){
-      try { return localStorage.getItem(key); }
-      catch(e) {
-        console.warn(`[localStorage] getItem fallito: ${e?.message}. Le note non saranno persistenti in questo contesto.`);
-        return null;
-      }
-    }
-    function safeLocalSet(key, val){
-      try { localStorage.setItem(key, val); }
-      catch(e) {
-        console.warn(`[localStorage] setItem fallito: ${e?.message}. Le note non verranno salvate.`);
-      }
-    }
-    // NOME: ora usiamo label leggibile (inserita dall’utente)
-    function sheetName(i){
-      const s = S[i];
-      if (s.label && s.label.trim()) return s.label.trim();
-      return `Lista ${i+1}`;
-    }
-
-    // =========================
-    // Load one sheet
-    // =========================
-    async function loadSheet(i, silent=false){
-      const s = S[i];
-      s.error = "";
-      if (!s.url.trim()) return { changed:false };
-
-      const {sheetId, gid} = parseSheetUrl(s.url);
-      if (!sheetId) {
-        console.error(
-          `[loadSheet] URL non valido per Lista ${i+1}.\n` +
-          `  URL inserito: "${s.url}"\n` +
-          `  L'URL deve essere un Google Sheets del tipo:\n` +
-          `    https://docs.google.com/spreadsheets/d/ID_FOGLIO/edit#gid=0\n` +
-          `  Assicurati che l'URL contenga "/spreadsheets/d/" e un ID foglio valido.`
-        );
-        throw new Error("URL non valido. Controlla la console per dettagli.");
+        navOpenSheet.style.display = SPREADSHEET_ID ? "flex" : "none";
       }
 
-      console.log(`[loadSheet] Carico Lista ${i+1} | sheetId=${sheetId} | gid=${gid}`);
-
-      const resp = await loadGvizViaFetch(gvizUrl(sheetId, gid));
-      if (resp?.status !== "ok"){
-        const detail = resp?.errors?.[0]?.detailed_message
-                    || resp?.errors?.[0]?.message
-                    || "Nessun dettaglio disponibile";
-        const reason = resp?.errors?.[0]?.reason || "unknown";
-        console.error(
-          `[loadSheet] Foglio non accessibile (Lista ${i+1}).\n` +
-          `  Status GViz: "${resp?.status}"\n` +
-          `  Reason: ${reason}\n` +
-          `  Dettaglio: ${detail}\n` +
-          `  Soluzione: vai su Google Sheets → Condividi → ` +
-          `"Chiunque abbia il link" con ruolo "Visualizzatore".`
-        );
-        throw new Error(detail || "Sheet non accessibile. Controlla la console per dettagli.");
+      function renderList(s) {
+        if (!s.rows.length) { view.innerHTML = `<div class="muted" style="padding:20px">Nessun record trovato.</div>`; return; }
+        const MAX_COLS = 8;
+        const shownCols = s.cols.slice(0, MAX_COLS);
+        const extra = s.cols.length > MAX_COLS;
+        const wrap = document.createElement("div"); wrap.className = "table-wrap";
+        const scroll = document.createElement("div"); scroll.className = "table-scroll";
+        const table = document.createElement("table"); table.className = "data";
+        table.innerHTML = `<thead><tr><th class="row-idx">#</th>${shownCols.map((c) => `<th title="${escapeHtml(c.n)}">${escapeHtml(c.n)}</th>`).join("")}${extra ? `<th><span class="col-chip">+${s.cols.length - MAX_COLS}</span></th>` : ""}</tr></thead><tbody>${s.rows.map((r) => `<tr data-id="${r.__id}" class="${s.sel === r.__id ? "active" : ""}"><td class="row-idx">${r.__id + 1}</td>${shownCols.map((c) => `<td title="${escapeHtml(r[c.k] || "")}">${escapeHtml(r[c.k] || "")}</td>`).join("")}${extra ? `<td class="muted"></td>` : ""}</tr>`).join("")}</tbody>`;
+        table.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-id]"); if (!tr) return; s.mode = "detail"; s.sel = Number(tr.dataset.id); render(); });
+        scroll.appendChild(table); wrap.appendChild(scroll); view.innerHTML = ""; view.appendChild(wrap);
       }
 
-      const sig = hash32(JSON.stringify(resp.table || {}));
-      if (sig === s.sig) return { changed:false };
-      s.sig = sig;
+      function renderDetail(s) {
+        const row = s.rows.find((r) => r.__id === s.sel);
+        if (!row) { s.mode = "list"; s.sel = null; render(); return; }
+        const title = (row[s.cols[0]?.k] || `Record ${row.__id + 1}`).toString();
+        const initials = title.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "#";
+        const important = ["name","nome","title","titolo","company","azienda","email","mail","phone","telefono","status","stato","owner","responsabile","id","codice","indirizzo","address","city","città","cap","piva"];
+        const scored = s.cols.map((c) => { const n = (c.n||"").toLowerCase(); return { c, score: important.some((k) => n.includes(k)) ? 10 : 0 }; }).sort((a,b) => b.score - a.score);
+        const leftCols = scored.slice(0, Math.min(14, scored.length)).map((x) => x.c);
+        const rightCols = scored.slice(Math.min(14, scored.length), Math.min(22, scored.length)).map((x) => x.c);
 
-      const { cols, rows } = tableToRows(resp);
-      if (!cols.length) {
-        console.error(
-          `[loadSheet] Nessuna colonna trovata in Lista ${i+1}.\n` +
-          `  Il foglio potrebbe essere vuoto, oppure il GID specificato punta ` +
-          `a un foglio privo di dati nella prima riga (intestazioni mancanti).`
-        );
-        throw new Error("Nessuna colonna trovata. Controlla la console per dettagli.");
-      }
-
-      s.cols = cols;
-      s.rows = rows;
-      s.loaded = true;
-
-      console.log(`[loadSheet] Lista ${i+1} caricata: ${cols.length} colonne, ${rows.length} righe.`);
-      if (!silent) setStatus("ok", `Caricato: ${sheetName(i)} • ${rows.length} record`);
-      return { changed:true };
-    }
-
-    // =========================
-    // UI: Tabs (sidebar nav style)
-    // =========================
-    function renderTabs(){
-      tabs.innerHTML = "";
-      S.forEach((s,i)=>{
-        const b = document.createElement("button");
-        b.className = "nav-item" + (i===active ? " active" : "");
-        const badge = s.loaded ? `<span class="nav-badge">${s.rows.length}</span>` : "";
-        b.innerHTML = `${escapeHtml(sheetName(i))}${badge}`;
-        b.onclick = ()=>{
-          active = i;
-          S[i].mode = "list";
-          S[i].sel = null;
-          render();
-        };
-        tabs.appendChild(b);
-      });
-    }
-
-    // =========================
-    // UI: Card-row list view
-    // =========================
-    function renderList(s){
-      if (!s.rows.length){
-        view.innerHTML = `<div class="muted">Nessun record.</div>`;
-        return;
-      }
-
-      const MAX_COLS = 10;
-      const shownCols = s.cols.slice(0, MAX_COLS);
-      const colExtra = s.cols.length > MAX_COLS;
-
-      // Calcola larghezza colonna in base al contenuto più lungo (header o celle)
-      // ~7.5px per carattere + 28px padding, min 80px, max 320px
-      function colWidth(col){
-        const headerLen = col.n.length;
-        const maxCellLen = s.rows.reduce((max, r) => {
-          const v = r[col.k] || "";
-          return Math.max(max, v.length);
-        }, 0);
-        const longest = Math.max(headerLen, maxCellLen);
-        const px = Math.min(320, Math.max(80, Math.round(longest * 7.5 + 28)));
-        return `${px}px`;
-      }
-
-      const gridCols = `52px ${shownCols.map(c=>colWidth(c)).join(' ')}${colExtra ? ' 70px' : ''}`;
-
-      const wrap = document.createElement("div");
-      wrap.className = "card-list-wrap";
-
-      const inner = document.createElement("div");
-      inner.className = "card-list-inner";
-
-      const header = document.createElement("div");
-      header.className = "list-header";
-      header.style.gridTemplateColumns = gridCols;
-      header.innerHTML = `
-        <div class="list-cell idx">#</div>
-        ${shownCols.map(c=>`<div class="list-cell" title="${escapeHtml(c.n)}">${escapeHtml(c.n)}</div>`).join('')}
-        ${colExtra ? `<div class="list-cell"></div>` : ''}
-      `;
-
-      const body = document.createElement("div");
-      body.className = "card-list";
-
-      s.rows.forEach(r => {
-        const row = document.createElement("div");
-        row.className = "list-row" + (s.sel === r.__id ? " active" : "");
-        row.style.gridTemplateColumns = gridCols;
-        row.dataset.id = r.__id;
-        row.innerHTML = `
-          <div class="list-cell idx">${r.__id + 1}</div>
-          ${shownCols.map(c=>`<div class="list-cell" title="${escapeHtml(r[c.k]||'')}">${escapeHtml(r[c.k]||'')}</div>`).join('')}
-          ${colExtra ? `<div class="list-cell"><span class="more-cols-chip">+${s.cols.length - MAX_COLS}</span></div>` : ''}
-        `;
-        body.appendChild(row);
-      });
-
-      body.addEventListener("click", (e)=>{
-        const row = e.target.closest("[data-id]");
-        if (!row) return;
-        s.mode = "detail";
-        s.sel = Number(row.dataset.id);
-        render();
-      });
-
-      inner.appendChild(header);
-      inner.appendChild(body);
-      wrap.appendChild(inner);
-      view.innerHTML = "";
-      view.appendChild(wrap);
-    }
-
-    // =========================
-    // UI: Editorial detail view
-    // =========================
-    function renderDetail(s){
-      const row = s.rows.find(r => r.__id === s.sel);
-      if (!row){ s.mode="list"; s.sel=null; render(); return; }
-
-      const title = (row[s.cols[0]?.k] || `Record ${row.__id+1}`).toString();
-
-      const important = ["name","nome","title","titolo","company","azienda","email","mail","phone","telefono","status","stato","owner","responsabile","id"];
-      const scored = s.cols.map(c=>{
-        const n = (c.n||"").toLowerCase();
-        const score = important.some(k=>n.includes(k)) ? 10 : 0;
-        return { c, score };
-      }).sort((a,b)=>b.score-a.score);
-
-      const leftCols  = scored.slice(0, Math.min(14, scored.length)).map(x=>x.c);
-      const rightCols = scored.slice(Math.min(14, scored.length), Math.min(22, scored.length)).map(x=>x.c);
-
-      const root = document.createElement("div");
-      root.className = "detail-wrap";
-      root.innerHTML = `
-        <div class="breadcrumb">
-          <button class="breadcrumb-link" id="breadBack">← ${escapeHtml(sheetName(active))}</button>
-          <span class="breadcrumb-sep">/</span>
-          <span>${escapeHtml(title)}</span>
-        </div>
-
-        <div class="detail-header">
-          <div>
-            <div class="detail-record-num">Record ${String(row.__id+1).padStart(4,"0")} di ${s.rows.length}</div>
-            <div class="detail-title">${escapeHtml(title)}</div>
+        const root = document.createElement("div"); root.className = "detail-wrap";
+        root.innerHTML = `
+          <div class="breadcrumb">
+            <button class="breadcrumb-link" id="breadBack"> ${escapeHtml(sheetName(active))}</button>
+            <span class="breadcrumb-sep">/</span>
+            <span>${escapeHtml(title)}</span>
           </div>
-          <div class="detail-actions">
-            <button class="btn-action" id="crmCopy">Copia JSON</button>
-            <button class="btn-action" id="crmCopyLink">Copia link</button>
-          </div>
-        </div>
-
-        <div class="detail-body">
-          <div class="detail-section">
-            <div class="detail-section-head">Dettagli record</div>
-            <div id="crmLeft"></div>
-          </div>
-
-          <div class="detail-sidebar">
-            <div class="detail-section">
-              <div class="detail-section-head">Campi aggiuntivi</div>
-              <div id="crmRight"></div>
+          <div class="detail-hero">
+            <div class="detail-hero-left">
+              <div class="detail-avatar">${escapeHtml(initials)}</div>
+              <div class="detail-hero-text">
+                <div class="detail-record-num">Record ${String(row.__id+1).padStart(4,"0")} di ${s.rows.length}</div>
+                <div class="detail-title">${escapeHtml(title)}</div>
+              </div>
             </div>
-            <div class="detail-section">
-              <div class="detail-section-head">Note locali</div>
-              <textarea class="notes-area" id="crmNotes" placeholder="Aggiungi note… (salvate solo in questo browser)"></textarea>
+            <div class="detail-actions">
+              <button class="btn-ghost" id="crmCopy"> Copia JSON</button>
+              <button class="btn-ghost" id="crmCopyLink"> Copia link</button>
             </div>
           </div>
-        </div>
-      `;
+          <div class="detail-grid">
+            <div class="detail-card">
+              <div class="detail-card-head">Dettagli record</div>
+              <div id="crmLeft"></div>
+            </div>
+            <div class="detail-sidebar-col">
+              ${rightCols.length ? `<div class="detail-card"><div class="detail-card-head">Campi aggiuntivi</div><div id="crmRight"></div></div>` : ""}
+              <div class="detail-card">
+                <div class="detail-card-head">Note locali</div>
+                <textarea class="notes-area" id="crmNotes" placeholder="Aggiungi note (salvate localmente)"></textarea>
+              </div>
+            </div>
+          </div>`;
 
-      const left = root.querySelector("#crmLeft");
-      const right = root.querySelector("#crmRight");
+        const left = root.querySelector("#crmLeft");
+        const right = root.querySelector("#crmRight");
+        function addField(container, c) {
+          const v = row[c.k] || "";
+          const el = document.createElement("div"); el.className = "field-row";
+          el.innerHTML = `<div class="field-key">${escapeHtml(c.n)}</div><div class="field-val${v ? "" : " empty"}">${escapeHtml(v || "")}</div>`;
+          container.appendChild(el);
+        }
+        leftCols.forEach((c) => addField(left, c));
+        if (right) (rightCols.length ? rightCols : s.cols.slice(14, 22)).forEach((c) => addField(right, c));
 
-      function addField(container, c){
-        const v = row[c.k] || "";
-        const el = document.createElement("div");
-        el.className = "field-row";
-        el.innerHTML = `
-          <div class="field-key">${escapeHtml(c.n)}</div>
-          <div class="field-val${v ? "" : " empty"}">${escapeHtml(v || "—")}</div>
-        `;
-        container.appendChild(el);
+        const noteKey = `notes:${active}:${row.__id}`;
+        const notesEl = root.querySelector("#crmNotes");
+        notesEl.value = safeLocalGet(noteKey) || "";
+        notesEl.addEventListener("input", () => safeLocalSet(noteKey, notesEl.value));
+        root.querySelector("#breadBack").onclick = () => { s.mode = "list"; s.sel = null; render(); };
+        root.querySelector("#crmCopy").onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify(row, null, 2)); setStatus("ok", "JSON copiato"); } catch { setStatus("bad", "Clipboard non disponibile"); } };
+        root.querySelector("#crmCopyLink").onclick = async () => { const link = `${location.href.split("#")[0]}#sheet=${active}&row=${row.__id}`; try { await navigator.clipboard.writeText(link); setStatus("ok", "Link copiato"); } catch { setStatus("bad", "Clipboard non disponibile"); } };
+        view.innerHTML = ""; view.appendChild(root);
       }
 
-      leftCols.forEach(c => addField(left, c));
-      (rightCols.length ? rightCols : s.cols.slice(14, 22)).forEach(c => addField(right, c));
-
-      const noteKey = `notes:${active}:${row.__id}`;
-      const notesEl = root.querySelector("#crmNotes");
-      notesEl.value = safeLocalGet(noteKey) || "";
-      notesEl.addEventListener("input", ()=> safeLocalSet(noteKey, notesEl.value));
-
-      root.querySelector("#breadBack").onclick = ()=>{
-        const s = S[active]; s.mode="list"; s.sel=null; render();
-      };
-      root.querySelector("#crmCopy").onclick = async ()=>{
-        try{ await navigator.clipboard.writeText(JSON.stringify(row, null, 2)); setStatus("ok","JSON copiato"); }
-        catch{ setStatus("bad","Clipboard non disponibile"); }
-      };
-      root.querySelector("#crmCopyLink").onclick = async ()=>{
-        const link = `${location.href.split("#")[0]}#sheet=${active}&row=${row.__id}`;
-        try{ await navigator.clipboard.writeText(link); setStatus("ok","Link copiato"); }
-        catch{ setStatus("bad","Clipboard non disponibile"); }
-      };
-
-      view.innerHTML = "";
-      view.appendChild(root);
-    }
-
-    // =========================
-    // Render main
-    // =========================
-    function render(){
-      renderTabs();
-      globalErr.style.display = "none";
-      globalErr.textContent = "";
-
-      const s = S[active];
-      viewTitle.textContent = sheetName(active);
-
-      backBtn.style.display = "none"; // back is handled inside renderDetail breadcrumb
-      openSheetBtn.style.display = s.url.trim() ? "inline-block" : "none";
-
-      if (!s.url.trim()){
-        viewMeta.textContent = "Incolla un URL per questa lista.";
-        view.innerHTML = `<div class="muted">Nessun URL inserito.</div>`;
-        return;
-      }
-
-      if (!s.loaded){
-        viewMeta.textContent = "Non caricato";
-        view.innerHTML = `<div class="muted">Premi <b>Carica</b>.</div>`;
-        return;
-      }
-
-      viewMeta.textContent = `${s.rows.length} record`;
-
-      if (s.mode === "detail") renderDetail(s);
-      else renderList(s);
-    }
-
-    // =========================
-    // Auto-refresh (only active sheet)
-    // =========================
-    function startRefresh(){
-      stopRefresh();
-      timer = setInterval(async ()=>{
-        if (document.hidden) return;
+      function render() {
+        renderTabs();
         const s = S[active];
-        if (!s.url.trim() || !s.loaded) return;
-
-        try{
-          const { changed } = await loadSheet(active, true);
-          if (changed){
-            setStatus("ok", `Aggiornato: ${sheetName(active)} • ${new Date().toLocaleTimeString()}`);
-            render();
-          }
-        } catch(e) {
-          console.warn(
-            `[polling] Aggiornamento automatico fallito per "${sheetName(active)}".\n` +
-            `  Errore: ${e?.message || e}\n` +
-            `  Il polling riproverà al prossimo intervallo (${REFRESH_MS/1000}s).`
-          );
-          // soft: non mostriamo errore in UI durante il polling silenzioso
+        if (!s) {
+          viewTitle.textContent = "Nessuna entità"; viewMeta.textContent = "";
+          backBtn.style.display = "none"; $("refreshBtn").style.display = "none";
+          view.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><h3>Nessun dato caricato</h3><p>Apri la sezione <strong>Configurazione</strong>, incolla l'URL del file Google Sheets e premi <strong>Carica dati</strong>.</p></div>`;
+          return;
         }
-      }, REFRESH_MS);
-    }
-    function stopRefresh(){
-      if (timer) clearInterval(timer);
-      timer = null;
-    }
-
-    function applyPollingFromUI(){
-      const sec = Math.max(10, Number(pollSecInput.value || 60));
-      pollSecInput.value = sec;
-      REFRESH_MS = sec * 1000;
-      startRefresh();
-      setStatus(null, `Polling impostato: ${sec}s`);
-    }
-
-    // =========================
-    // Inputs (Nome + URL)
-    // =========================
-    for (let i=0;i<MAX_SHEETS;i++){
-      const d = document.createElement("div");
-      d.className = "field-group";
-      d.innerHTML = `
-        <div class="field-label">Sorgente ${i+1} — Nome</div>
-        <input id="n${i}" placeholder="es. Clienti, Lead, Ordini…" />
-        <div class="field-label" style="margin-top:6px">URL Google Sheet</div>
-        <input id="u${i}" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" />
-      `;
-      inputs.appendChild(d);
-
-      const nameEl = $("n"+i);
-      const urlEl = $("u"+i);
-
-      nameEl.addEventListener("input", (e)=>{
-        S[i].label = e.target.value;
-        renderTabs();
-        if (i===active) render();
-      });
-
-      urlEl.addEventListener("input", (e)=>{
-        S[i].url = e.target.value;
-        // invalidate
-        S[i].loaded = false; S[i].cols=[]; S[i].rows=[]; S[i].sig="";
-        S[i].mode="list"; S[i].sel=null;
-        renderTabs();
-        if (i===active) render();
-      });
-    }
-
-    // =========================
-    // Buttons
-    // =========================
-    $("load").onclick = async ()=>{
-      setStatus(null, "Carico…");
-      globalErr.style.display = "none";
-      globalErr.textContent = "";
-
-      const any = S.some(s=>s.url.trim());
-      if (!any){
-        setStatus("bad","Nessun URL");
-        globalErr.textContent = "Inserisci almeno un URL prima di caricare.";
-        globalErr.style.display = "block";
-        return;
-      }
-
-      let ok = 0, bad = 0;
-      await Promise.all(S.map(async (s,i)=>{
-        if (!s.url.trim()) return;
-        try{
-          await loadSheet(i, false);
-          ok++;
-        } catch(e){
-          s.loaded = false;
-          s.error = e?.message || "Errore";
-          bad++;
+        viewTitle.textContent = sheetName(active);
+        backBtn.style.display = s.loaded && s.mode === "detail" ? "inline-block" : "none";
+        $("refreshBtn").style.display = s.loaded ? "inline-block" : "none";
+        if (!s.loaded && s.error) {
+          viewMeta.textContent = "Errore";
+          view.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><h3>Errore caricamento foglio</h3><p>${escapeHtml(s.error)}</p></div>`;
+          return;
         }
-      }));
-
-      if (!S[active].loaded){
-        const first = S.findIndex(x=>x.loaded);
-        if (first>=0) active = first;
+        if (!s.loaded) {
+          viewMeta.textContent = "Caricamento";
+          view.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><h3>Caricamento in corso</h3></div>`;
+          return;
+        }
+        viewMeta.textContent = `${s.rows.length} record  ${s.cols.length} colonne`;
+        if (s.mode === "detail") renderDetail(s); else renderList(s);
       }
 
-      if (ok && !bad) setStatus("ok", `Caricati ${ok} fogli`);
-      else if (ok && bad) setStatus(null, `Caricati ${ok}, errori ${bad}`);
-      else setStatus("bad", "Errore caricamento");
+      $("load").onclick = async () => {
+        const rawUrl = sheetUrlInput.value.trim();
+        if (!rawUrl) { setStatus("bad", "Inserisci un URL"); globalErr.innerHTML = "Inserisci l'URL del file Google Sheets."; globalErr.style.display = "block"; return; }
+        const { sheetId } = parseSheetUrl(rawUrl);
+        if (!sheetId) { setStatus("bad", "URL non valido"); globalErr.innerHTML = "URL non riconosciuto. Deve essere un link Google Sheets.<br><code>https://docs.google.com/spreadsheets/d/ID.../edit</code>"; globalErr.style.display = "block"; return; }
+        applyAgentId(); stopRefresh();
+        setStatus(null, "Scopro i fogli"); globalErr.style.display = "none";
+        let sheetNames;
+        try { sheetNames = await discoverSheets(sheetId); }
+        catch (e) { setStatus("bad", "Errore"); globalErr.innerHTML = escapeHtml(e.message); globalErr.style.display = "block"; return; }
+        SPREADSHEET_ID = sheetId;
+        S = sheetNames.map((name, i) => ({ idx: i, label: name, cols: [], rows: [], loaded: false, error: "", mode: "list", sel: null, sig: "" }));
+        active = 0;
+        setStatus(null, `Trovati ${S.length} fogli  carico`); render();
+        let ok = 0, bad = 0;
+        await Promise.all(S.map(async (s, i) => { try { await loadSheet(i, true); ok++; } catch (e) { s.loaded = false; s.error = e?.message || "Errore"; bad++; } }));
+        if (!S[active]?.loaded) { const first = S.findIndex((x) => x.loaded); if (first >= 0) active = first; }
+        if (ok && !bad) setStatus("ok", `${ok} ${ok === 1 ? "foglio caricato" : "fogli caricati"}`);
+        else if (ok && bad) setStatus("bad", `${ok} ok  ${bad} errori`);
+        else setStatus("bad", "Errore caricamento");
+        const errs = S.filter((x) => !x.loaded && x.error).map((x) => `<strong>${escapeHtml(x.label)}:</strong> ${escapeHtml(x.error)}`);
+        if (errs.length) { globalErr.innerHTML = errs.join("<br>"); globalErr.style.display = "block"; }
+        render(); applyPollingFromUI();
+        if (ok > 0) $("configPanel").open = false;
+      };
 
-      const errs = S.filter(x=>x.url.trim() && !x.loaded).map((x)=>`${sheetName(x.idx)}: ${x.error || "Errore"}`);
-      if (errs.length){
-        globalErr.innerHTML = `<strong>Alcuni fogli non sono leggibili:</strong><br>${errs.map(e=>escapeHtml(e)).join("<br>")}`;
-        globalErr.style.display = "block";
+      $("reset").onclick = () => {
+        stopRefresh(); S = []; SPREADSHEET_ID = null; SPREADSHEET_TITLE = null;
+        sheetUrlInput.value = ""; active = 0;
+        setStatus(null, "In attesa"); globalErr.style.display = "none";
+        $("refreshBtn").style.display = "none";
+        $("brandName").textContent = "CRM"; $("brandLogoIcon").textContent = "C";
+        document.title = "CRM  AI Voice Assistant"; render();
+      };
+
+      backBtn.onclick = () => { S[active].mode = "list"; S[active].sel = null; render(); };
+      sheetUrlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") $("load").click(); });
+
+      function startRefresh() {
+        stopRefresh();
+        timer = setInterval(async () => {
+          if (document.hidden) return;
+          const s = S[active];
+          if (!SPREADSHEET_ID || !s || !s.loaded) return;
+          try { const { changed } = await loadSheet(active, true); if (changed) { setStatus("ok", `Aggiornato: ${sheetName(active)}  ${new Date().toLocaleTimeString()}`); render(); } }
+          catch (e) { console.warn(`[polling] Errore: ${e?.message}`); }
+        }, REFRESH_MS);
+      }
+      function stopRefresh() { if (timer) clearInterval(timer); timer = null; }
+      function applyPollingFromUI() {
+        const sec = Math.max(2, Number(pollSecInput.value || 10));
+        pollSecInput.value = sec; REFRESH_MS = sec * 1000;
+        if (SPREADSHEET_ID) startRefresh();
       }
 
-      render();
-      startRefresh();
-    };
+      $("refreshBtn").onclick = async () => {
+        const btn = $("refreshBtn");
+        if (!SPREADSHEET_ID || !S.length) return;
+        btn.disabled = true; btn.textContent = " Aggiornamento"; setStatus(null, "Aggiornamento");
+        try {
+          const { changed } = await loadSheet(active, false);
+          if (changed) { render(); setStatus("ok", `Aggiornato: ${sheetName(active)}  ${new Date().toLocaleTimeString()}`); }
+          else setStatus("ok", "Nessuna modifica");
+        } catch (e) { setStatus("bad", `Errore: ${e?.message}`); }
+        finally { btn.disabled = false; btn.textContent = " Aggiorna"; }
+      };
 
-    $("reset").onclick = ()=>{
-      stopRefresh();
-      for (let i=0;i<MAX_SHEETS;i++){
-        S[i].url=""; S[i].label="";
-        S[i].cols=[]; S[i].rows=[]; S[i].loaded=false; S[i].error="";
-        S[i].mode="list"; S[i].sel=null; S[i].sig="";
-        const u = $("u"+i); if (u) u.value = "";
-        const n = $("n"+i); if (n) n.value = "";
+      pollSecInput.addEventListener("change", applyPollingFromUI);
+      pollSecInput.addEventListener("blur", applyPollingFromUI);
+
+      function applyHash() {
+        const h = location.hash.replace(/^#/, "");
+        if (!h) return;
+        const params = new URLSearchParams(h);
+        const si = Number(params.get("sheet")), ri = Number(params.get("row"));
+        if (!Number.isNaN(si) && si >= 0 && si < S.length) active = si;
+        if (!Number.isNaN(ri) && ri >= 0 && S[active]) { S[active].mode = "detail"; S[active].sel = ri; }
       }
-      active = 0;
-      setStatus(null,"In attesa");
-      globalErr.style.display="none";
-      render();
-      startRefresh();
-    };
+      window.addEventListener("hashchange", () => { applyHash(); render(); });
 
-    backBtn.onclick = ()=>{
-      const s = S[active];
-      s.mode = "list";
-      s.sel = null;
-      render();
-    };
-
-    openSheetBtn.onclick = ()=>{
-      const u = S[active].url.trim();
-      if (u) window.open(u, "_blank", "noopener,noreferrer");
-    };
-
-    pollSecInput.addEventListener("change", applyPollingFromUI);
-    pollSecInput.addEventListener("blur", applyPollingFromUI);
-
-    // deep link support: #sheet=1&row=12
-    function applyHash(){
-      const h = location.hash.replace(/^#/, "");
-      if (!h) return;
-      const params = new URLSearchParams(h);
-      const si = Number(params.get("sheet"));
-      const ri = Number(params.get("row"));
-      if (!Number.isNaN(si) && si>=0 && si<MAX_SHEETS) active = si;
-      if (!Number.isNaN(ri) && ri>=0){
-        S[active].mode = "detail";
-        S[active].sel = ri;
-      }
-    }
-    window.addEventListener("hashchange", ()=>{ applyHash(); render(); });
-
-    // boot
-    applyHash();
-    render();
-    applyPollingFromUI(); // sets REFRESH_MS + starts refresh
-  </script>
-</body>
+      const savedAgent = safeLocalGet("agentId");
+      if (savedAgent) $("agentIdInput").value = savedAgent;
+      applyAgentId(); applyHash(); render();
+    </script>
+  </body>
 </html>

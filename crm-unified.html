@@ -1034,17 +1034,6 @@
             <div class="config-toolbar">
               <button class="primary" id="load">Carica dati</button>
               <button id="reset">Azzera</button>
-              <div class="poll-group">
-                <span>Auto-refresh</span>
-                <input
-                  id="pollSec"
-                  type="number"
-                  min="2"
-                  step="1"
-                  value="5"
-                />
-                <span>sec</span>
-              </div>
             </div>
             <div id="globalErr" class="err-box" style="display: none"></div>
           </div>
@@ -1058,6 +1047,7 @@
               Configura una sorgente dati per iniziare
             </div>
             <div class="view-actions">
+              <button id="refreshBtn" style="display: none">🔄 Aggiorna</button>
               <button id="back" style="display: none">← Lista</button>
             </div>
           </div>
@@ -1127,18 +1117,12 @@
 
     <script>
       // =========================
-      // Config
-      // =========================
-      let REFRESH_MS = 5000;
-
-      // =========================
       // State
       // =========================
       // S = array of sheets discovered from the single spreadsheet
       let S = [];
       let SPREADSHEET_ID = null;
       let active = 0;
-      let timer = null;
 
       // =========================
       // DOM refs
@@ -1152,7 +1136,6 @@
       const viewMeta = $("viewMeta");
       const backBtn = $("back");
       const globalErr = $("globalErr");
-      const pollSecInput = $("pollSec");
       const mainArea = $("mainArea");
       const assistantPanel = $("assistantPanel");
       const navOpenSheet = $("navOpenSheet");
@@ -1589,6 +1572,7 @@
           viewTitle.textContent = "Nessuna entità";
           viewMeta.textContent = "";
           backBtn.style.display = "none";
+          $("refreshBtn").style.display = "none";
           view.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">📊</div>
@@ -1601,6 +1585,7 @@
         viewTitle.textContent = sheetName(active);
         backBtn.style.display =
           s.loaded && s.mode === "detail" ? "inline-block" : "none";
+        $("refreshBtn").style.display = s.loaded ? "inline-block" : "none";
 
         if (!s.loaded && s.error) {
           viewMeta.textContent = "Errore";
@@ -1627,40 +1612,7 @@
         else renderList(s);
       }
 
-      // =========================
-      // Polling / Auto-refresh
-      // =========================
-      function startRefresh() {
-        stopRefresh();
-        timer = setInterval(async () => {
-          if (document.hidden) return;
-          const s = S[active];
-          if (!SPREADSHEET_ID || !s || !s.loaded) return;
-          try {
-            const { changed } = await loadSheet(active, true);
-            if (changed) {
-              setStatus(
-                "ok",
-                `Aggiornato: ${sheetName(active)} · ${new Date().toLocaleTimeString()}`,
-              );
-              render();
-            }
-          } catch (e) {
-            console.warn(`[polling] Errore: ${e?.message}`);
-          }
-        }, REFRESH_MS);
-      }
-      function stopRefresh() {
-        if (timer) clearInterval(timer);
-        timer = null;
-      }
 
-      function applyPollingFromUI() {
-        const sec = Math.max(2, Number(pollSecInput.value || 5));
-        pollSecInput.value = sec;
-        REFRESH_MS = sec * 1000;
-        startRefresh();
-      }
 
       // =========================
       // Buttons
@@ -1686,7 +1638,6 @@
 
         setStatus(null, "Scopro i fogli…");
         globalErr.style.display = "none";
-        stopRefresh();
 
         let sheetNames;
         try {
@@ -1755,18 +1706,17 @@
         }
 
         render();
-        startRefresh();
         if (ok > 0) $("configPanel").open = false;
       };
 
       $("reset").onclick = () => {
-        stopRefresh();
         S = [];
         SPREADSHEET_ID = null;
         sheetUrlInput.value = "";
         active = 0;
         setStatus(null, "In attesa");
         globalErr.style.display = "none";
+        $("refreshBtn").style.display = "none";
         render();
       };
 
@@ -1781,8 +1731,28 @@
         if (e.key === "Enter") $("load").click();
       });
 
-      pollSecInput.addEventListener("change", applyPollingFromUI);
-      pollSecInput.addEventListener("blur", applyPollingFromUI);
+      // Manual refresh
+      $("refreshBtn").onclick = async () => {
+        const btn = $("refreshBtn");
+        if (!SPREADSHEET_ID || !S.length) return;
+        btn.disabled = true;
+        btn.textContent = "⏳ Aggiornamento…";
+        setStatus(null, "Aggiornamento…");
+        try {
+          const { changed } = await loadSheet(active, false);
+          if (changed) {
+            render();
+            setStatus("ok", `Aggiornato: ${sheetName(active)} · ${new Date().toLocaleTimeString()}`);
+          } else {
+            setStatus("ok", "Nessuna modifica");
+          }
+        } catch (e) {
+          setStatus("bad", `Errore: ${e?.message}`);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "🔄 Aggiorna";
+        }
+      };
 
       // Deep link support
       function applyHash() {
@@ -1805,7 +1775,6 @@
       // Boot
       applyHash();
       render();
-      applyPollingFromUI();
     </script>
   </body>
 </html>

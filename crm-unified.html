@@ -607,12 +607,19 @@
 
       <!-- Config panel -->
       <details class="config-panel" id="configPanel" open>
-        <summary>⚙ Configurazione sorgenti dati</summary>
+        <summary>⚙ Configurazione sorgente dati</summary>
         <div class="config-body">
-          <div class="config-grid" id="inputs"></div>
+          <div class="field-group">
+            <div class="field-label">URL Google Sheet (intero file)</div>
+            <input type="url" id="sheetUrl"
+              placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+              style="font-size:13px; padding:11px 14px;"
+            />
+            <div class="muted" style="margin-top:6px">Il file deve essere condiviso con <strong style="color:var(--txt2)">"Chiunque abbia il link"</strong> → Visualizzatore. Tutti i fogli del file verranno caricati come entità separate.</div>
+          </div>
           <div class="config-toolbar">
             <button class="primary" id="load">Carica dati</button>
-            <button id="reset">Azzera tutto</button>
+            <button id="reset">Azzera</button>
             <div class="poll-group">
               <span>Auto-refresh</span>
               <input id="pollSec" type="number" min="10" step="5" value="60" />
@@ -690,17 +697,14 @@
     // =========================
     // Config
     // =========================
-    const MAX_SHEETS = 5;
     let REFRESH_MS = 60000;
 
     // =========================
     // State
     // =========================
-    const S = Array.from({length: MAX_SHEETS}, (_,i)=>({
-      idx:i, url:"", label:"",
-      cols:[], rows:[], loaded:false, error:"",
-      mode:"list", sel:null, sig:""
-    }));
+    // S = array of sheets discovered from the single spreadsheet
+    let S = [];
+    let SPREADSHEET_ID = null;
     let active = 0;
     let timer = null;
 
@@ -708,7 +712,6 @@
     // DOM refs
     // =========================
     const $ = id => document.getElementById(id);
-    const inputs     = $("inputs");
     const tabs       = $("tabs");
     const view       = $("view");
     const statusEl   = $("status");
@@ -721,6 +724,7 @@
     const mainArea   = $("mainArea");
     const assistantPanel = $("assistantPanel");
     const navOpenSheet   = $("navOpenSheet");
+    const sheetUrlInput  = $("sheetUrl");
 
     // =========================
     // Assistant toggle
@@ -743,8 +747,8 @@
     }
 
     function openCurrentSheet() {
-      const u = S[active].url.trim();
-      if (u) window.open(u, "_blank", "noopener,noreferrer");
+      if (SPREADSHEET_ID)
+        window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`, "_blank", "noopener,noreferrer");
     }
 
     // =========================
@@ -777,8 +781,8 @@
       }
     }
 
-    function gvizUrl(sheetId, gid) {
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+    function gvizUrlByName(spreadsheetId, sheetName) {
+      return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
     }
 
     function hash32(str) {
@@ -794,44 +798,63 @@
     function safeLocalSet(key, val) { try { localStorage.setItem(key, val); } catch {} }
 
     function sheetName(i) {
-      const s = S[i];
-      return (s.label && s.label.trim()) ? s.label.trim() : `Entità ${i+1}`;
+      return S[i]?.label || `Foglio ${i+1}`;
     }
 
     // =========================
-    // GViz Loader
+    // GViz Loader (by sheet name — più stabile del gid)
     // =========================
     async function loadGvizViaFetch(url) {
       let resp;
       try { resp = await fetch(url, { credentials: "omit" }); }
       catch(e) {
         console.error(`[GViz] Errore di rete: ${e?.message}\n  URL: ${url}`);
-        throw new Error("Errore di rete. Controlla la console.");
+        throw new Error(`Errore di rete (fetch). Assicurati che il foglio sia pubblico e riprova.`);
       }
       if (!resp.ok) {
         console.error(`[GViz] HTTP ${resp.status} — foglio probabilmente privato.\n  URL: ${url}`);
-        throw new Error(`HTTP ${resp.status}: foglio non accessibile.`);
+        throw new Error(`HTTP ${resp.status}: foglio non accessibile. Condividi il file con "Chiunque abbia il link".`);
       }
       const text = await resp.text();
       const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/);
       if (!match) {
         console.error("[GViz] Risposta non parsabile. Foglio privato o ID errato.");
-        throw new Error("Risposta GViz non parsabile.");
+        throw new Error("Risposta GViz non parsabile. Il foglio potrebbe essere privato.");
       }
       let data;
       try { data = JSON.parse(match[1]); }
-      catch(e) {
-        console.error("[GViz] JSON.parse fallito:", e.message);
-        throw new Error("Errore parsing JSON GViz.");
-      }
+      catch(e) { throw new Error("Errore parsing JSON GViz."); }
       return data;
+    }
+
+    // =========================
+    // Discover all sheets in a Google Spreadsheet (no API key needed)
+    // Uses Sheets API v3 feeds endpoint (public sheets only)
+    // =========================
+    async function discoverSheets(spreadsheetId) {
+      const url = `https://spreadsheets.google.com/feeds/worksheets/${spreadsheetId}/public/basic?alt=json`;
+      let resp;
+      try { resp = await fetch(url, { credentials: "omit" }); }
+      catch(e) {
+        throw new Error(`Impossibile raggiungere Google Sheets API. Verifica la connessione.`);
+      }
+      if (!resp.ok) {
+        throw new Error(`Il file Google Sheets non è accessibile (HTTP ${resp.status}). Assicurati che sia condiviso con "Chiunque abbia il link" → Visualizzatore.`);
+      }
+      const data = await resp.json();
+      const entries = data?.feed?.entry || [];
+      if (!entries.length) throw new Error("Nessun foglio trovato nel file.");
+      return entries.map(e => e.title.$t); // array of sheet names
     }
 
     function tableToRows(resp) {
       const t = resp?.table;
       if (!t?.cols || !t?.rows) return { cols: [], rows: [] };
+
+      // Prima riga = intestazioni
       const firstRow = t.rows[0];
       const dataRows = t.rows.slice(1);
+
       const cols = t.cols.map((c, i) => {
         const hCell = firstRow?.c?.[i];
         const hVal = (hCell?.f ?? hCell?.v ?? "");
@@ -839,31 +862,37 @@
           : (c.label && String(c.label).trim()) ? c.label : `Col ${i+1}`;
         return { k: "c"+i, n: name, type: c.type || "string" };
       });
-      const rows = dataRows.map((r, ri) => {
-        const o = { __id: ri };
-        (r.c || []).forEach((cell, i) => {
-          o["c"+i] = String(cell?.f ?? cell?.v ?? "");
-        });
-        return o;
-      });
+
+      // Filtra righe completamente vuote
+      const rows = dataRows
+        .map((r, ri) => {
+          const o = { __id: ri };
+          (r.c || []).forEach((cell, i) => {
+            o["c"+i] = String(cell?.f ?? cell?.v ?? "");
+          });
+          return o;
+        })
+        .filter(r => cols.some(c => r[c.k] && r[c.k].trim()));
+
       return { cols, rows };
     }
 
     // =========================
-    // Load sheet
+    // Load one sheet by name
     // =========================
     async function loadSheet(i, silent = false) {
       const s = S[i];
       s.error = "";
-      if (!s.url.trim()) return { changed: false };
-      const { sheetId, gid } = parseSheetUrl(s.url);
-      if (!sheetId) throw new Error("URL non valido.");
+      if (!SPREADSHEET_ID || !s.label) return { changed: false };
 
-      const resp = await loadGvizViaFetch(gvizUrl(sheetId, gid));
+      const url = gvizUrlByName(SPREADSHEET_ID, s.label);
+      const resp = await loadGvizViaFetch(url);
+
       if (resp?.status !== "ok") {
         const detail = resp?.errors?.[0]?.detailed_message || resp?.errors?.[0]?.message || "Sheet non accessibile";
         throw new Error(detail);
       }
+
       const sig = hash32(JSON.stringify(resp.table || {}));
       if (sig === s.sig) return { changed: false };
       s.sig = sig;
@@ -873,7 +902,7 @@
       s.cols = cols;
       s.rows = rows;
       s.loaded = true;
-      if (!silent) setStatus("ok", `${sheetName(i)} — ${rows.length} record`);
+      if (!silent) setStatus("ok", `${s.label} — ${rows.length} record`);
       return { changed: true };
     }
 
@@ -883,7 +912,6 @@
     function renderTabs() {
       tabs.innerHTML = "";
       S.forEach((s, i) => {
-        if (!s.url.trim() && !s.loaded && !s.label.trim()) return; // skip empty
         const b = document.createElement("button");
         b.className = "nav-item" + (i === active ? " active" : "");
         const badge = s.loaded ? `<span class="nav-badge">${s.rows.length}</span>` : "";
@@ -892,8 +920,8 @@
         b.onclick = () => { active = i; S[i].mode = "list"; S[i].sel = null; render(); };
         tabs.appendChild(b);
       });
-      // Show "Apri Google Sheet" only if current has URL
-      navOpenSheet.style.display = S[active].url.trim() ? "flex" : "none";
+      // Show "Apri Google Sheet" only if a spreadsheet is loaded
+      navOpenSheet.style.display = SPREADSHEET_ID ? "flex" : "none";
     }
 
     // =========================
@@ -1044,28 +1072,40 @@
     // =========================
     function render() {
       renderTabs();
-      globalErr.style.display = "none";
       const s = S[active];
-      viewTitle.textContent = sheetName(active);
-      backBtn.style.display = (s.loaded && s.mode === "detail") ? "inline-block" : "none";
 
-      if (!s.url.trim()) {
+      if (!s) {
+        viewTitle.textContent = "Nessuna entità";
         viewMeta.textContent = "";
+        backBtn.style.display = "none";
         view.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">📊</div>
             <h3>Nessun dato caricato</h3>
-            <p>Apri la sezione <strong>Configurazione</strong>, incolla l'URL di un Google Sheet e premi <strong>Carica dati</strong>.</p>
+            <p>Apri la sezione <strong>Configurazione</strong>, incolla l'URL del file Google Sheets e premi <strong>Carica dati</strong>.</p>
+          </div>`;
+        return;
+      }
+
+      viewTitle.textContent = sheetName(active);
+      backBtn.style.display = (s.loaded && s.mode === "detail") ? "inline-block" : "none";
+
+      if (!s.loaded && s.error) {
+        viewMeta.textContent = "Errore";
+        view.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Errore caricamento foglio</h3>
+            <p>${escapeHtml(s.error)}</p>
           </div>`;
         return;
       }
       if (!s.loaded) {
-        viewMeta.textContent = "Non caricato";
+        viewMeta.textContent = "Caricamento…";
         view.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">⏳</div>
-            <h3>Pronto per il caricamento</h3>
-            <p>URL configurato. Premi <strong>Carica dati</strong> per visualizzare i record.</p>
+            <h3>Caricamento in corso…</h3>
           </div>`;
         return;
       }
@@ -1083,7 +1123,7 @@
       timer = setInterval(async () => {
         if (document.hidden) return;
         const s = S[active];
-        if (!s.url.trim() || !s.loaded) return;
+        if (!SPREADSHEET_ID || !s || !s.loaded) return;
         try {
           const { changed } = await loadSheet(active, true);
           if (changed) {
@@ -1105,66 +1145,70 @@
     }
 
     // =========================
-    // Build config inputs
-    // =========================
-    for (let i = 0; i < MAX_SHEETS; i++) {
-      const d = document.createElement("div");
-      d.className = "field-group";
-      d.innerHTML = `
-        <div class="field-label">Entità ${i+1} — Nome</div>
-        <input type="text" id="n${i}" placeholder="es. Clienti, Contratti, Misuratori…" />
-        <div class="field-label" style="margin-top:8px">URL Google Sheet</div>
-        <input type="url" id="u${i}" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" />
-      `;
-      inputs.appendChild(d);
-
-      $("n"+i).addEventListener("input", e => {
-        S[i].label = e.target.value;
-        renderTabs();
-        if (i === active) render();
-      });
-
-      $("u"+i).addEventListener("input", e => {
-        S[i].url = e.target.value;
-        S[i].loaded = false; S[i].cols = []; S[i].rows = []; S[i].sig = "";
-        S[i].mode = "list"; S[i].sel = null;
-        renderTabs();
-        if (i === active) render();
-      });
-    }
-
-    // =========================
     // Buttons
     // =========================
     $("load").onclick = async () => {
-      setStatus(null, "Carico…");
-      globalErr.style.display = "none";
-
-      const any = S.some(s => s.url.trim());
-      if (!any) {
-        setStatus("bad", "Nessun URL");
-        globalErr.innerHTML = "Inserisci almeno un URL prima di caricare.";
+      const rawUrl = sheetUrlInput.value.trim();
+      if (!rawUrl) {
+        setStatus("bad", "Inserisci un URL");
+        globalErr.innerHTML = "Inserisci l'URL del file Google Sheets.";
         globalErr.style.display = "block";
         return;
       }
 
+      // Extract spreadsheet ID
+      const { sheetId } = parseSheetUrl(rawUrl);
+      if (!sheetId) {
+        setStatus("bad", "URL non valido");
+        globalErr.innerHTML = "URL non riconosciuto. Deve essere un link Google Sheets del tipo:<br><code>https://docs.google.com/spreadsheets/d/ID.../edit</code>";
+        globalErr.style.display = "block";
+        return;
+      }
+
+      setStatus(null, "Scopro i fogli…");
+      globalErr.style.display = "none";
+      stopRefresh();
+
+      let sheetNames;
+      try {
+        sheetNames = await discoverSheets(sheetId);
+      } catch(e) {
+        setStatus("bad", "Errore");
+        globalErr.innerHTML = escapeHtml(e.message);
+        globalErr.style.display = "block";
+        return;
+      }
+
+      // Build state array from discovered sheet names
+      SPREADSHEET_ID = sheetId;
+      S = sheetNames.map((name, i) => ({
+        idx: i, label: name,
+        cols: [], rows: [], loaded: false, error: "",
+        mode: "list", sel: null, sig: ""
+      }));
+      active = 0;
+
+      setStatus(null, `Trovati ${S.length} fogli — carico…`);
+      render();
+
+      // Load all sheets in parallel
       let ok = 0, bad = 0;
       await Promise.all(S.map(async (s, i) => {
-        if (!s.url.trim()) return;
-        try { await loadSheet(i, false); ok++; }
+        try { await loadSheet(i, true); ok++; }
         catch(e) { s.loaded = false; s.error = e?.message || "Errore"; bad++; }
       }));
 
-      if (!S[active].loaded) {
+      if (!S[active]?.loaded) {
         const first = S.findIndex(x => x.loaded);
         if (first >= 0) active = first;
       }
 
-      if (ok && !bad) setStatus("ok", `${ok} ${ok === 1 ? "entità caricata" : "entità caricate"}`);
-      else if (ok && bad) setStatus("bad", `${ok} ok, ${bad} errori`);
+      if (ok && !bad) setStatus("ok", `${ok} ${ok === 1 ? "foglio caricato" : "fogli caricati"}`);
+      else if (ok && bad) setStatus("bad", `${ok} ok · ${bad} errori`);
       else setStatus("bad", "Errore caricamento");
 
-      const errs = S.filter(x => x.url.trim() && !x.loaded).map(x => `<strong>${escapeHtml(sheetName(x.idx))}:</strong> ${escapeHtml(x.error)}`);
+      const errs = S.filter(x => !x.loaded && x.error).map(x =>
+        `<strong>${escapeHtml(x.label)}:</strong> ${escapeHtml(x.error)}`);
       if (errs.length) {
         globalErr.innerHTML = errs.join("<br>");
         globalErr.style.display = "block";
@@ -1172,18 +1216,14 @@
 
       render();
       startRefresh();
-
-      // Auto-close config after successful load
       if (ok > 0) $("configPanel").open = false;
     };
 
     $("reset").onclick = () => {
       stopRefresh();
-      for (let i = 0; i < MAX_SHEETS; i++) {
-        Object.assign(S[i], { url:"", label:"", cols:[], rows:[], loaded:false, error:"", mode:"list", sel:null, sig:"" });
-        const u = $("u"+i); if (u) u.value = "";
-        const n = $("n"+i); if (n) n.value = "";
-      }
+      S = [];
+      SPREADSHEET_ID = null;
+      sheetUrlInput.value = "";
       active = 0;
       setStatus(null, "In attesa");
       globalErr.style.display = "none";
@@ -1191,6 +1231,9 @@
     };
 
     backBtn.onclick = () => { S[active].mode = "list"; S[active].sel = null; render(); };
+
+    // Allow pressing Enter in URL input to trigger load
+    sheetUrlInput.addEventListener("keydown", e => { if (e.key === "Enter") $("load").click(); });
 
     pollSecInput.addEventListener("change", applyPollingFromUI);
     pollSecInput.addEventListener("blur", applyPollingFromUI);

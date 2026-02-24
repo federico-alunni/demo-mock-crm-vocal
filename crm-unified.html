@@ -781,9 +781,9 @@
       }
     }
 
-    function gvizUrlByName(spreadsheetId, sheetName) {
-      return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-    }
+    // Google Sheets API v4 — supporta CORS da qualsiasi origin (file://, http, https)
+    const GSHEETS_API_KEY = "AIzaSyAVpHLTY1NgIFr76Kx6f48moncg9WDt1C8";
+    const SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 
     function hash32(str) {
       let h = 2166136261;
@@ -802,104 +802,69 @@
     }
 
     // =========================
-    // GViz Loader (by sheet name — più stabile del gid)
-    // =========================
-    async function loadGvizViaFetch(url) {
-      let resp;
-      try { resp = await fetch(url, { credentials: "omit" }); }
-      catch(e) {
-        console.error(`[GViz] Errore di rete: ${e?.message}\n  URL: ${url}`);
-        throw new Error(`Errore di rete (fetch). Assicurati che il foglio sia pubblico e riprova.`);
-      }
-      if (!resp.ok) {
-        console.error(`[GViz] HTTP ${resp.status} — foglio probabilmente privato.\n  URL: ${url}`);
-        throw new Error(`HTTP ${resp.status}: foglio non accessibile. Condividi il file con "Chiunque abbia il link".`);
-      }
-      const text = await resp.text();
-      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/);
-      if (!match) {
-        console.error("[GViz] Risposta non parsabile. Foglio privato o ID errato.");
-        throw new Error("Risposta GViz non parsabile. Il foglio potrebbe essere privato.");
-      }
-      let data;
-      try { data = JSON.parse(match[1]); }
-      catch(e) { throw new Error("Errore parsing JSON GViz."); }
-      return data;
-    }
-
-    // =========================
-    // Discover all sheets in a Google Spreadsheet (no API key needed)
-    // Uses Sheets API v3 feeds endpoint (public sheets only)
+    // Sheets API v4 — discover all sheet titles
     // =========================
     async function discoverSheets(spreadsheetId) {
-      const url = `https://spreadsheets.google.com/feeds/worksheets/${spreadsheetId}/public/basic?alt=json`;
+      const url = `${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties.title&key=${GSHEETS_API_KEY}`;
       let resp;
-      try { resp = await fetch(url, { credentials: "omit" }); }
-      catch(e) {
-        throw new Error(`Impossibile raggiungere Google Sheets API. Verifica la connessione.`);
-      }
+      try { resp = await fetch(url); }
+      catch(e) { throw new Error(`Errore di rete. Verifica la connessione.`); }
       if (!resp.ok) {
-        throw new Error(`Il file Google Sheets non è accessibile (HTTP ${resp.status}). Assicurati che sia condiviso con "Chiunque abbia il link" → Visualizzatore.`);
+        const body = await resp.json().catch(() => ({}));
+        const msg = body?.error?.message || `HTTP ${resp.status}`;
+        throw new Error(`Impossibile leggere il file (${msg}). Assicurati che sia condiviso con "Chiunque abbia il link" → Visualizzatore.`);
       }
       const data = await resp.json();
-      const entries = data?.feed?.entry || [];
-      if (!entries.length) throw new Error("Nessun foglio trovato nel file.");
-      return entries.map(e => e.title.$t); // array of sheet names
-    }
-
-    function tableToRows(resp) {
-      const t = resp?.table;
-      if (!t?.cols || !t?.rows) return { cols: [], rows: [] };
-
-      // Prima riga = intestazioni
-      const firstRow = t.rows[0];
-      const dataRows = t.rows.slice(1);
-
-      const cols = t.cols.map((c, i) => {
-        const hCell = firstRow?.c?.[i];
-        const hVal = (hCell?.f ?? hCell?.v ?? "");
-        const name = (hVal && String(hVal).trim()) ? String(hVal).trim()
-          : (c.label && String(c.label).trim()) ? c.label : `Col ${i+1}`;
-        return { k: "c"+i, n: name, type: c.type || "string" };
-      });
-
-      // Filtra righe completamente vuote
-      const rows = dataRows
-        .map((r, ri) => {
-          const o = { __id: ri };
-          (r.c || []).forEach((cell, i) => {
-            o["c"+i] = String(cell?.f ?? cell?.v ?? "");
-          });
-          return o;
-        })
-        .filter(r => cols.some(c => r[c.k] && r[c.k].trim()));
-
-      return { cols, rows };
+      const sheets = data?.sheets || [];
+      if (!sheets.length) throw new Error("Nessun foglio trovato nel file.");
+      return sheets.map(s => s.properties.title);
     }
 
     // =========================
-    // Load one sheet by name
+    // Sheets API v4 — load one sheet's values
+    // Riga 0 = intestazioni, righe successive = dati
     // =========================
     async function loadSheet(i, silent = false) {
       const s = S[i];
       s.error = "";
       if (!SPREADSHEET_ID || !s.label) return { changed: false };
 
-      const url = gvizUrlByName(SPREADSHEET_ID, s.label);
-      const resp = await loadGvizViaFetch(url);
-
-      if (resp?.status !== "ok") {
-        const detail = resp?.errors?.[0]?.detailed_message || resp?.errors?.[0]?.message || "Sheet non accessibile";
-        throw new Error(detail);
+      const url = `${SHEETS_BASE}/${SPREADSHEET_ID}/values/${encodeURIComponent(s.label)}?key=${GSHEETS_API_KEY}`;
+      let resp;
+      try { resp = await fetch(url); }
+      catch(e) { throw new Error(`Errore di rete per il foglio "${s.label}".`); }
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
+      const data = await resp.json();
+      const values = data?.values || [];
 
-      const sig = hash32(JSON.stringify(resp.table || {}));
+      const sig = hash32(JSON.stringify(values));
       if (sig === s.sig) return { changed: false };
       s.sig = sig;
 
-      const { cols, rows } = tableToRows(resp);
-      if (!cols.length) throw new Error("Nessuna colonna trovata.");
-      s.cols = cols;
+      if (values.length < 1) throw new Error(`Il foglio "${s.label}" è vuoto.`);
+
+      // Prima riga = header
+      const headers = values[0].map((h, i) => ({
+        k: "c"+i,
+        n: String(h || `Col ${i+1}`).trim()
+      }));
+
+      // Righe dati, filtra vuote
+      const rows = values.slice(1)
+        .map((row, ri) => {
+          const o = { __id: ri };
+          headers.forEach((col, ci) => {
+            o[col.k] = String(row[ci] ?? "");
+          });
+          return o;
+        })
+        .filter(r => headers.some(c => r[c.k] && r[c.k].trim()));
+
+      if (!headers.length) throw new Error(`Nessuna colonna trovata in "${s.label}".`);
+      s.cols = headers;
       s.rows = rows;
       s.loaded = true;
       if (!silent) setStatus("ok", `${s.label} — ${rows.length} record`);

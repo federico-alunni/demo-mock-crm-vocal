@@ -438,8 +438,7 @@
         const initials = title.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "#";
         const important = ["name","nome","title","titolo","company","azienda","email","mail","phone","telefono","status","stato","owner","responsabile","id","codice","indirizzo","address","city","città","cap","piva"];
         const scored = s.cols.map((c) => { const n = (c.n||"").toLowerCase(); return { c, score: important.some((k) => n.includes(k)) ? 10 : 0 }; }).sort((a,b) => b.score - a.score);
-        const leftCols = scored.slice(0, Math.min(14, scored.length)).map((x) => x.c);
-        const rightCols = scored.slice(Math.min(14, scored.length), Math.min(22, scored.length)).map((x) => x.c);
+        const leftCols = scored.map((x) => x.c);
 
         const root = document.createElement("div"); root.className = "detail-wrap";
         root.innerHTML = `
@@ -467,7 +466,6 @@
               <div id="crmLeft"></div>
             </div>
             <div class="detail-sidebar-col">
-              ${rightCols.length ? `<div class="detail-card"><div class="detail-card-head">Campi aggiuntivi</div><div id="crmRight"></div></div>` : ""}
               <div class="detail-card">
                 <div class="detail-card-head">Note locali</div>
                 <textarea class="notes-area" id="crmNotes" placeholder="Aggiungi note (salvate localmente)"></textarea>
@@ -476,7 +474,6 @@
           </div>`;
 
         const left = root.querySelector("#crmLeft");
-        const right = root.querySelector("#crmRight");
         function addField(container, c) {
           const v = row[c.k] || "";
           const el = document.createElement("div"); el.className = "field-row";
@@ -484,7 +481,6 @@
           container.appendChild(el);
         }
         leftCols.forEach((c) => addField(left, c));
-        if (right) (rightCols.length ? rightCols : s.cols.slice(14, 22)).forEach((c) => addField(right, c));
 
         const noteKey = `notes:${active}:${row.__id}`;
         const notesEl = root.querySelector("#crmNotes");

@@ -685,8 +685,7 @@
         return { c, score };
       }).sort((a,b)=>b.score-a.score);
 
-      const leftCols  = scored.slice(0, Math.min(14, scored.length)).map(x=>x.c);
-      const rightCols = scored.slice(Math.min(14, scored.length), Math.min(22, scored.length)).map(x=>x.c);
+      const leftCols = scored.map(x=>x.c);
 
       const root = document.createElement("div");
       root.className = "crmWrap";
@@ -721,11 +720,6 @@
 
           <div class="crmRightCol">
             <div class="crmCard">
-              <h4>Campi extra</h4>
-              <div class="crmFields" id="crmRight"></div>
-            </div>
-
-            <div class="crmCard">
               <h4>Note locali</h4>
               <textarea class="crmNote" id="crmNotes" placeholder="Scrivi note qui (rimangono solo in questo browser)…"></textarea>
             </div>
@@ -734,7 +728,6 @@
       `;
 
       const left = root.querySelector("#crmLeft");
-      const right = root.querySelector("#crmRight");
 
       function addField(container, c){
         const v = row[c.k] || "";
@@ -748,7 +741,6 @@
       }
 
       leftCols.forEach(c => addField(left, c));
-      (rightCols.length ? rightCols : s.cols.slice(14, 22)).forEach(c => addField(right, c));
 
       const noteKey = `notes:${active}:${row.__id}`;
       const notesEl = root.querySelector("#crmNotes");

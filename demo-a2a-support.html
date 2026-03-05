@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A2A · Support — AI Voice Assistant</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --navy: #001230;
+        --navy-mid: #001843;
+        --navy-lt: #002060;
+        --orange: #f5821e;
+        --orange-glow: rgba(245, 130, 30, 0.22);
+        --text: #f0f2f8;
+        --muted: #6b7bb8;
+        --border: rgba(245, 130, 30, 0.18);
+        --border-navy: rgba(255, 255, 255, 0.08);
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--navy);
+        color: var(--text);
+        font-family: "Inter", system-ui, sans-serif;
+        overflow-x: hidden;
+      }
+
+      /* ── Noise texture overlay ── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+      }
+
+      /* ── Radial ambient light ── */
+      .mesh {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            ellipse 65% 55% at 8% 12%,
+            rgba(245, 130, 30, 0.08) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 55% 65% at 92% 88%,
+            rgba(245, 130, 30, 0.05) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 45% 45% at 50% 50%,
+            rgba(26, 47, 102, 0.4) 0%,
+            transparent 70%
+          );
+      }
+
+      /* ── Dot grid ── */
+      .dot-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.04) 1px,
+          transparent 1px
+        );
+        background-size: 32px 32px;
+      }
+
+      /* ── Scan line ── */
+      .scan {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--orange) 40%,
+          rgba(245, 130, 30, 0.6) 60%,
+          transparent 100%
+        );
+        opacity: 0.4;
+        animation: scan 12s linear infinite;
+        z-index: 2;
+        pointer-events: none;
+      }
+
+      .wrapper {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Header ── */
+      header {
+        padding: 1.2rem 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-navy);
+        animation: fadeDown 0.7s ease both;
+        flex-shrink: 0;
+      }
+
+      .logo-wrap {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      /* A2A wordmark */
+      .a2a-logo {
+        font-family: "Inter", sans-serif;
+        font-weight: 900;
+        font-size: 1.5rem;
+        letter-spacing: -0.04em;
+        color: var(--orange);
+        line-height: 1;
+        position: relative;
+      }
+      .a2a-logo span {
+        color: var(--text);
+        opacity: 0.85;
+      }
+
+      .logo-divider {
+        width: 1px;
+        height: 22px;
+        background: var(--border-navy);
+      }
+
+      .logo-area {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 0.3em 0.9em;
+        border-radius: 2px;
+      }
+
+      .badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--orange);
+        box-shadow: 0 0 8px var(--orange);
+        animation: blink 2s ease-in-out infinite;
+      }
+
+      /* ── Hero strip ── */
+      .hero-strip {
+        padding: 2rem 2.5rem 0;
+        text-align: center;
+        flex-shrink: 0;
+        animation: fadeUp 0.8s 0.1s ease both;
+      }
+
+      .eyebrow {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.38em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 0.6rem;
+      }
+
+      h1 {
+        font-family: "Inter", sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        color: var(--text);
+      }
+
+      h1 em {
+        font-style: normal;
+        color: var(--orange);
+      }
+
+      .hero-sub {
+        margin-top: 0.7rem;
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-weight: 400;
+        letter-spacing: 0.01em;
+      }
+
+      /* ── Widget zone ── */
+      .widget-zone {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.8rem 2rem;
+        animation: fadeUp 0.9s 0.25s ease both;
+        min-height: 0;
+      }
+
+      .widget-label {
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1.2rem;
+      }
+
+      .widget-frame {
+        background: var(--navy-mid);
+        border: 1px solid var(--border-navy);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow:
+          0 0 0 1px rgba(245, 130, 30, 0.06),
+          0 0 60px rgba(245, 130, 30, 0.05),
+          0 30px 90px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        width: min(900px, 96vw);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: stretch;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Corner brackets — A2A style */
+      .widget-frame::before,
+      .widget-frame::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-color: var(--orange);
+        border-style: solid;
+        opacity: 0.4;
+      }
+      .widget-frame::before {
+        top: 14px;
+        left: 14px;
+        border-width: 1px 0 0 1px;
+      }
+      .widget-frame::after {
+        bottom: 14px;
+        right: 14px;
+        border-width: 0 1px 1px 0;
+      }
+
+      /* Subtle orange vignette glow inside frame */
+      .widget-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 60% 35% at 50% 50%,
+          rgba(245, 130, 30, 0.05),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      elevenlabs-convai {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        flex: 1;
+        display: block;
+        min-height: 0;
+      }
+
+      elevenlabs-convai::part(container),
+      elevenlabs-convai > * {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      /* ── Stats bar ── */
+      .stats {
+        display: flex;
+        gap: clamp(1.5rem, 5vw, 4.5rem);
+        padding: 1.2rem 2.5rem;
+        flex-shrink: 0;
+        animation: fadeUp 0.9s 0.4s ease both;
+        justify-content: center;
+      }
+
+      .stat {
+        text-align: center;
+      }
+
+      .stat-val {
+        font-family: "Inter", sans-serif;
+        font-size: clamp(1.1rem, 2vw, 1.5rem);
+        font-weight: 800;
+        color: var(--orange);
+        line-height: 1;
+        letter-spacing: -0.02em;
+      }
+
+      .stat-lbl {
+        font-size: 0.52rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 0.3rem;
+      }
+
+      /* ── Footer ── */
+      footer {
+        padding: 1rem 2.5rem;
+        border-top: 1px solid var(--border-navy);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        flex-shrink: 0;
+        animation: fadeDown 0.7s 0.5s ease both;
+      }
+
+      .footer-left {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+
+      .footer-a2a {
+        font-weight: 900;
+        font-size: 0.85rem;
+        letter-spacing: -0.03em;
+        color: var(--orange);
+      }
+
+      .footer-copy {
+        font-size: 0.58rem;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .footer-links a {
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .footer-links a:hover {
+        color: var(--orange);
+      }
+
+      /* ── Keyframes ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes fadeDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes scan {
+        0% {
+          top: -1px;
+          opacity: 0;
+        }
+        5% {
+          opacity: 0.4;
+        }
+        95% {
+          opacity: 0.4;
+        }
+        100% {
+          top: 100vh;
+          opacity: 0;
+        }
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.25;
+        }
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 600px) {
+        header,
+        footer {
+          padding: 1rem 1.2rem;
+        }
+        .hero-strip {
+          padding: 1.2rem 1.2rem 0;
+        }
+        .widget-zone {
+          padding: 1rem;
+        }
+        .widget-frame {
+          height: calc(100vh - 320px);
+          min-height: 360px;
+          padding: 1.5rem 1rem;
+          border-radius: 12px;
+        }
+        .stats {
+          gap: 1.5rem;
+          padding: 1rem 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mesh"></div>
+    <div class="dot-grid"></div>
+    <div class="scan"></div>
+
+    <div class="wrapper">
+      <header>
+        <div class="logo-wrap">
+          <div class="a2a-logo">A2A<span> ·</span></div>
+          <div class="logo-divider"></div>
+          <div class="logo-area">Life Company · AI Support</div>
+        </div>
+        <div class="badge">Assistente attivo · EU</div>
+      </header>
+
+      <div class="hero-strip">
+        <p class="eyebrow">A2A · Supporto vocale intelligente in tempo reale</p>
+        <h1><em>A2A Support</em> — il tuo assistente AI</h1>
+        <p class="hero-sub">
+          Energia, assistenza e soluzioni — alimentato da ElevenLabs
+          Conversational AI
+        </p>
+      </div>
+
+      <div class="widget-zone">
+        <span class="widget-label">Avvia la conversazione</span>
+        <div class="widget-frame">
+          <div class="widget-glow"></div>
+          <elevenlabs-convai agent-id="agent_4701kjw0nr4he18thnqk3f3nygnq" server-location="eu-residency"></elevenlabs-convai>
+          <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-val">&lt;1s</div>
+          <div class="stat-lbl">Latenza</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">EU</div>
+          <div class="stat-lbl">Server</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">24/7</div>
+          <div class="stat-lbl">Disponibile</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">A2A</div>
+          <div class="stat-lbl">Life Company</div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="footer-left">
+          <span class="footer-a2a">A2A</span>
+          <span class="footer-copy"
+            >© 2026 A2A Energia S.p.A. — Powered by
+            ElevenLabs</span
+          >
+        </div>
+        <div class="footer-links">
+          <a href="https://www.a2a.it" target="_blank" rel="noopener"
+            >a2a.it</a
+          >
+          <a href="index.html">← Demo Hub</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

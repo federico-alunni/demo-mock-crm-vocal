@@ -1,703 +1,998 @@
 <!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sheets Multi-List Viewer (Excel + CRM)</title>
-  <style>
-    :root{
-      --bg:#0b0b0f;
-      --panel:rgba(255,255,255,.03);
-      --border:#2a2a35;
-      --txt:#f4f4f5;
-      --muted:#a1a1aa;
-      --muted2:#71717a;
-      --ok:#22c55e;
-      --bad:#ef4444;
-      --r:14px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--txt)}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    h2{margin:0 0 10px;font-size:18px}
-    .card{
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      background:var(--panel);
-      padding:12px;
-    }
-    .muted{color:var(--muted);font-size:12px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .grid{display:grid;grid-template-columns:1fr;gap:8px}
-    @media(min-width:900px){.grid{grid-template-columns:repeat(5,1fr)}}
-    input,button{
-      border-radius:12px;border:1px solid var(--border);
-      background:rgba(255,255,255,.03);color:var(--txt);
-      padding:10px;font-size:12px;
-    }
-    input{width:100%}
-    button{cursor:pointer}
-    button.primary{background:#fff;color:#111;border-color:#fff;font-weight:700}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;border:1px solid var(--border);
-      background:rgba(255,255,255,.02);font-size:12px;color:var(--muted);
-    }
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--muted2)}
-    .dot.ok{background:var(--ok)}
-    .dot.bad{background:var(--bad)}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-    .tab{padding:8px 10px}
-    .tab.on{background:#fff;color:#111;border-color:#fff;font-weight:700}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sheets Multi-List Viewer (Excel + CRM)</title>
+    <style>
+      :root {
+        --bg: #0b0b0f;
+        --panel: rgba(255, 255, 255, 0.03);
+        --border: #2a2a35;
+        --txt: #f4f4f5;
+        --muted: #a1a1aa;
+        --muted2: #71717a;
+        --ok: #22c55e;
+        --bad: #ef4444;
+        --r: 14px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial;
+        background: var(--bg);
+        color: var(--txt);
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 18px;
+      }
+      h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--panel);
+        padding: 12px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: repeat(5, 1fr);
+        }
+      }
+      input,
+      button {
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--txt);
+        padding: 10px;
+        font-size: 12px;
+      }
+      input {
+        width: 100%;
+      }
+      button {
+        cursor: pointer;
+      }
+      button.primary {
+        background: #fff;
+        color: #111;
+        border-color: #fff;
+        font-weight: 700;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--muted2);
+      }
+      .dot.ok {
+        background: var(--ok);
+      }
+      .dot.bad {
+        background: var(--bad);
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 12px 0;
+      }
+      .tab {
+        padding: 8px 10px;
+      }
+      .tab.on {
+        background: #fff;
+        color: #111;
+        border-color: #fff;
+        font-weight: 700;
+      }
 
-    details{border:1px solid var(--border);border-radius:var(--r);background:var(--panel);padding:10px}
-    summary{cursor:pointer;user-select:none;font-weight:800}
-    summary::marker{color:var(--muted)}
-    .detailsBody{margin-top:10px}
+      details {
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--panel);
+        padding: 10px;
+      }
+      summary {
+        cursor: pointer;
+        user-select: none;
+        font-weight: 800;
+      }
+      summary::marker {
+        color: var(--muted);
+      }
+      .detailsBody {
+        margin-top: 10px;
+      }
 
-    /* ===== Excel-like Table ===== */
-    .tableWrap{
-      border:1px solid var(--border);
-      border-radius:14px;
-      overflow:hidden;
-      background:rgba(255,255,255,.02);
-    }
-    .tableScroll{max-height: 560px;overflow:auto}
-    table.excel{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-    table.excel thead th{
-      position:sticky;top:0;z-index:2;
-      background:rgba(15,15,20,.92);
-      border-bottom:1px solid var(--border);
-      color:#d4d4d8;text-align:left;
-      padding:10px 10px;white-space:nowrap;
-    }
-    table.excel tbody td{
-      border-bottom:1px solid rgba(42,42,53,.55);
-      padding:9px 10px;vertical-align:top;color:var(--txt);
-      max-width: 380px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    table.excel tbody tr:hover{background:rgba(255,255,255,.04)}
-    table.excel tbody tr.active{
-      outline:2px solid rgba(255,255,255,.22);
-      outline-offset:-2px;background:rgba(255,255,255,.03);
-    }
-    .cellMuted{color:var(--muted)}
-    .rowIndex{width:56px;color:var(--muted)!important}
-    .smallChip{
-      display:inline-flex;padding:3px 8px;border:1px solid var(--border);
-      border-radius:999px;font-size:11px;color:var(--muted);
-      background:rgba(255,255,255,.02);
-    }
+      /* ===== Excel-like Table ===== */
+      .tableWrap {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .tableScroll {
+        max-height: 560px;
+        overflow: auto;
+      }
+      table.excel {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12px;
+      }
+      table.excel thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: rgba(15, 15, 20, 0.92);
+        border-bottom: 1px solid var(--border);
+        color: #d4d4d8;
+        text-align: left;
+        padding: 10px 10px;
+        white-space: nowrap;
+      }
+      table.excel tbody td {
+        border-bottom: 1px solid rgba(42, 42, 53, 0.55);
+        padding: 9px 10px;
+        vertical-align: top;
+        color: var(--txt);
+        max-width: 380px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      table.excel tbody tr:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      table.excel tbody tr.active {
+        outline: 2px solid rgba(255, 255, 255, 0.22);
+        outline-offset: -2px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .cellMuted {
+        color: var(--muted);
+      }
+      .rowIndex {
+        width: 56px;
+        color: var(--muted) !important;
+      }
+      .smallChip {
+        display: inline-flex;
+        padding: 3px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 11px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.02);
+      }
 
-    /* ===== CRM Detail — Modern Premium ===== */
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+      /* ===== CRM Detail — Modern Premium ===== */
+      @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap");
 
-    .crmWrap {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      animation: crmFadeIn .25s ease;
-    }
-    @keyframes crmFadeIn {
-      from { opacity:0; transform:translateY(6px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
+      .crmWrap {
+        font-family: "DM Sans", system-ui, sans-serif;
+        animation: crmFadeIn 0.25s ease;
+      }
+      @keyframes crmFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    /* Hero header */
-    .crmHeader {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      padding: 20px 24px 18px;
-      margin: 0 -12px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, transparent 60%);
-      position: relative;
-      overflow: hidden;
-    }
-    .crmHeader::before {
-      content: '';
-      position: absolute;
-      top: -40px; left: -40px;
-      width: 200px; height: 200px;
-      background: radial-gradient(circle, rgba(99,179,237,.07) 0%, transparent 70%);
-      pointer-events: none;
-    }
+      /* Hero header */
+      .crmHeader {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        padding: 20px 24px 18px;
+        margin: 0 -12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.03) 0%,
+          transparent 60%
+        );
+        position: relative;
+        overflow: hidden;
+      }
+      .crmHeader::before {
+        content: "";
+        position: absolute;
+        top: -40px;
+        left: -40px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(
+          circle,
+          rgba(99, 179, 237, 0.07) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
 
-    .crmAvatar {
-      width: 48px; height: 48px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 700; color: #fff;
-      flex-shrink: 0;
-      letter-spacing: -.5px;
-      box-shadow: 0 4px 16px rgba(99,102,241,.35);
-    }
+      .crmAvatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        letter-spacing: -0.5px;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+      }
 
-    .crmHeaderLeft { display: flex; gap: 14px; align-items: center; min-width: 0; }
-    .crmHeaderText { min-width: 0; }
+      .crmHeaderLeft {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        min-width: 0;
+      }
+      .crmHeaderText {
+        min-width: 0;
+      }
 
-    .crmTitle {
-      font-size: 17px; font-weight: 600; margin: 0;
-      color: #f8fafc;
-      letter-spacing: -.02em;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 55ch;
-    }
-    .crmSub {
-      font-size: 11px; color: rgba(161,161,170,.7);
-      margin-top: 3px;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: .02em;
-    }
+      .crmTitle {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 0;
+        color: #f8fafc;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 55ch;
+      }
+      .crmSub {
+        font-size: 11px;
+        color: rgba(161, 161, 170, 0.7);
+        margin-top: 3px;
+        font-family: "DM Mono", monospace;
+        letter-spacing: 0.02em;
+      }
 
-    .crmActions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .crmActions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
 
-    .btnGhost {
-      padding: 7px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,.1);
-      background: rgba(255,255,255,.04);
-      color: #a1a1aa;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px; font-weight: 500;
-      cursor: pointer;
-      transition: background .15s, border-color .15s, color .15s;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .btnGhost:hover {
-      background: rgba(255,255,255,.09);
-      border-color: rgba(255,255,255,.2);
-      color: #f4f4f5;
-    }
-    .btnGhost svg { opacity: .65; }
+      .btnGhost {
+        padding: 7px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: #a1a1aa;
+        font-family: "DM Sans", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s,
+          color 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btnGhost:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #f4f4f5;
+      }
+      .btnGhost svg {
+        opacity: 0.65;
+      }
 
-    /* Layout grid */
-    .crmGrid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-top: 16px;
-    }
-    @media(min-width:980px){ .crmGrid { grid-template-columns: 1.4fr .6fr; } }
+      /* Layout grid */
+      .crmGrid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      @media (min-width: 980px) {
+        .crmGrid {
+          grid-template-columns: 1.4fr 0.6fr;
+        }
+      }
 
-    /* Section cards */
-    .crmCard {
-      border: 1px solid rgba(255,255,255,.065);
-      border-radius: 16px;
-      background: rgba(255,255,255,.02);
-      padding: 16px 18px;
-      backdrop-filter: blur(4px);
-    }
-    .crmCard h4 {
-      margin: 0 0 14px;
-      font-size: 10px;
-      font-weight: 600;
-      color: rgba(161,161,170,.55);
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      font-family: 'DM Mono', monospace;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .crmCard h4::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: rgba(255,255,255,.05);
-    }
+      /* Section cards */
+      .crmCard {
+        border: 1px solid rgba(255, 255, 255, 0.065);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 16px 18px;
+        backdrop-filter: blur(4px);
+      }
+      .crmCard h4 {
+        margin: 0 0 14px;
+        font-size: 10px;
+        font-weight: 600;
+        color: rgba(161, 161, 170, 0.55);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-family: "DM Mono", monospace;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .crmCard h4::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.05);
+      }
 
-    /* Fields grid */
-    .crmFields { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    @media(min-width:640px){ .crmFields { grid-template-columns: 1fr 1fr; } }
+      /* Fields grid */
+      .crmFields {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      @media (min-width: 640px) {
+        .crmFields {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
 
-    .crmField {
-      border: 1px solid rgba(255,255,255,.055);
-      background: rgba(255,255,255,.018);
-      border-radius: 12px;
-      padding: 11px 13px;
-      transition: border-color .15s, background .15s;
-      cursor: default;
-    }
-    .crmField:hover {
-      border-color: rgba(255,255,255,.12);
-      background: rgba(255,255,255,.035);
-    }
+      .crmField {
+        border: 1px solid rgba(255, 255, 255, 0.055);
+        background: rgba(255, 255, 255, 0.018);
+        border-radius: 12px;
+        padding: 11px 13px;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        cursor: default;
+      }
+      .crmField:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.035);
+      }
 
-    .crmKey {
-      font-size: 10px;
-      font-weight: 500;
-      color: rgba(161,161,170,.6);
-      margin-bottom: 5px;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      font-family: 'DM Mono', monospace;
-    }
-    .crmVal {
-      font-size: 13px;
-      color: #e4e4e7;
-      word-break: break-word;
-      min-height: 18px;
-      line-height: 1.5;
-      font-weight: 400;
-    }
-    .crmVal.empty { color: rgba(113,113,122,.5); font-style: italic; font-size: 12px; }
+      .crmKey {
+        font-size: 10px;
+        font-weight: 500;
+        color: rgba(161, 161, 170, 0.6);
+        margin-bottom: 5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-family: "DM Mono", monospace;
+      }
+      .crmVal {
+        font-size: 13px;
+        color: #e4e4e7;
+        word-break: break-word;
+        min-height: 18px;
+        line-height: 1.5;
+        font-weight: 400;
+      }
+      .crmVal.empty {
+        color: rgba(113, 113, 122, 0.5);
+        font-style: italic;
+        font-size: 12px;
+      }
 
-    /* Notes textarea */
-    .crmNote {
-      width: 100%;
-      min-height: 120px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.07);
-      background: rgba(255,255,255,.02);
-      color: #d4d4d8;
-      padding: 12px 14px;
-      resize: vertical;
-      font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
-      line-height: 1.6;
-      transition: border-color .15s, background .15s;
-      outline: none;
-    }
-    .crmNote:focus {
-      border-color: rgba(99,179,237,.35);
-      background: rgba(99,179,237,.04);
-    }
-    .crmNote::placeholder { color: rgba(113,113,122,.5); }
+      /* Notes textarea */
+      .crmNote {
+        width: 100%;
+        min-height: 120px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        background: rgba(255, 255, 255, 0.02);
+        color: #d4d4d8;
+        padding: 12px 14px;
+        resize: vertical;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        line-height: 1.6;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        outline: none;
+      }
+      .crmNote:focus {
+        border-color: rgba(99, 179, 237, 0.35);
+        background: rgba(99, 179, 237, 0.04);
+      }
+      .crmNote::placeholder {
+        color: rgba(113, 113, 122, 0.5);
+      }
 
-    .crmRightCol { display: flex; flex-direction: column; gap: 12px; }
-    .err{
-      margin-top:10px;border:1px solid rgba(239,68,68,.35);
-      background:rgba(239,68,68,.10);color:#fecaca;
-      padding:10px 12px;border-radius:12px;font-size:12px;
-    }
-    .inlineLabel{display:flex;gap:8px;align-items:center}
-    .mini{padding:8px 10px}
-    .w120{width:120px}
-    .w160{width:160px}
-  </style>
-</head>
+      .crmRightCol {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .err {
+        margin-top: 10px;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        background: rgba(239, 68, 68, 0.1);
+        color: #fecaca;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+      .inlineLabel {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .mini {
+        padding: 8px 10px;
+      }
+      .w120 {
+        width: 120px;
+      }
+      .w160 {
+        width: 160px;
+      }
+    </style>
+  </head>
 
-<body>
-  <div class="wrap">
-    <!--<h2>Sheets Multi-List Viewer</h2>-->
-	<img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg" height="111"><br/>
-    <!-- COLLASSABILE: configurazione link -->
-    <details open>
-      <summary>Configuration</summary>
-      <div class="detailsBody">
-        <div class="card" style="border:none;background:transparent;padding:0">
-          <div class="grid" id="inputs"></div>
+  <body>
+    <div class="wrap">
+      <!--<h2>Sheets Multi-List Viewer</h2>-->
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg"
+        height="111"
+      /><br />
+      <!-- COLLASSABILE: configurazione link -->
+      <details open>
+        <summary>Configuration</summary>
+        <div class="detailsBody">
+          <div
+            class="card"
+            style="border: none; background: transparent; padding: 0"
+          >
+            <div class="grid" id="inputs"></div>
 
-          <div class="row" style="margin-top:10px">
-            <button class="primary" id="load">Carica</button>
-            <button id="reset">Reset</button>
+            <div class="row" style="margin-top: 10px">
+              <button class="primary" id="load">Carica</button>
+              <button id="reset">Reset</button>
 
-            <span class="pill">
-              <span class="dot" id="dot"></span>
-              <span id="status">In attesa</span>
-            </span>
-
-            <span class="pill">
-              <span class="inlineLabel">
-                <span>Polling</span>
-                <input id="pollSec" class="mini w120" type="number" min="10" step="5" value="60" />
-                <span class="muted">sec</span>
+              <span class="pill">
+                <span class="dot" id="dot"></span>
+                <span id="status">In attesa</span>
               </span>
-            </span>
+
+              <span class="pill">
+                <span class="inlineLabel">
+                  <span>Polling</span>
+                  <input
+                    id="pollSec"
+                    class="mini w120"
+                    type="number"
+                    min="10"
+                    step="5"
+                    value="60"
+                  />
+                  <span class="muted">sec</span>
+                </span>
+              </span>
+            </div>
+
+            <div id="globalErr" class="err" style="display: none"></div>
           </div>
-
-          <div id="globalErr" class="err" style="display:none"></div>
         </div>
+      </details>
+
+      <div class="tabs" id="tabs"></div>
+
+      <div class="card">
+        <div class="row" style="justify-content: space-between">
+          <div>
+            <div style="font-weight: 900" id="viewTitle">Nessun foglio</div>
+            <div class="muted" id="viewMeta">Incolla URL e premi Carica</div>
+          </div>
+          <div class="row">
+            <button id="openSheet" style="display: none">Apri sheet</button>
+            <button id="back" style="display: none">← Lista</button>
+          </div>
+        </div>
+
+        <div id="view" style="margin-top: 10px"></div>
       </div>
-    </details>
-
-    <div class="tabs" id="tabs"></div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div>
-          <div style="font-weight:900" id="viewTitle">Nessun foglio</div>
-          <div class="muted" id="viewMeta">Incolla URL e premi Carica</div>
-        </div>
-        <div class="row">
-          <button id="openSheet" style="display:none">Apri sheet</button>
-          <button id="back" style="display:none">← Lista</button>
-        </div>
-      </div>
-
-      <div id="view" style="margin-top:10px"></div>
     </div>
-  </div>
 
-  <script>
-    // =========================
-    // Config dinamica (UI)
-    // =========================
-    const MAX_SHEETS = 5;
-    let REFRESH_MS = 60000;
+    <script>
+      // =========================
+      // Config dinamica (UI)
+      // =========================
+      const MAX_SHEETS = 5;
+      let REFRESH_MS = 60000;
 
-    // =========================
-    // State
-    // =========================
-    const S = Array.from({length: MAX_SHEETS}, (_,i)=>({
-      idx:i,
-      url:"",
-      label:"",         // NOME SHEET (leggibile) - inserito dall’utente
-      cols:[],
-      rows:[],
-      loaded:false,
-      error:"",
-      mode:"list",      // list | detail
-      sel:null,
-      sig:""            // signature to skip updates
-    }));
-    let active = 0;
-    let timer = null;
+      // =========================
+      // State
+      // =========================
+      const S = Array.from({ length: MAX_SHEETS }, (_, i) => ({
+        idx: i,
+        url: "",
+        label: "", // NOME SHEET (leggibile) - inserito dall’utente
+        cols: [],
+        rows: [],
+        loaded: false,
+        error: "",
+        mode: "list", // list | detail
+        sel: null,
+        sig: "", // signature to skip updates
+      }));
+      let active = 0;
+      let timer = null;
 
-    // =========================
-    // DOM
-    // =========================
-    const $ = (id)=>document.getElementById(id);
-    const inputs = $("inputs");
-    const tabs = $("tabs");
-    const view = $("view");
-    const statusEl = $("status");
-    const dotEl = $("dot");
-    const viewTitle = $("viewTitle");
-    const viewMeta = $("viewMeta");
-    const backBtn = $("back");
-    const openSheetBtn = $("openSheet");
-    const globalErr = $("globalErr");
-    const pollSecInput = $("pollSec");
+      // =========================
+      // DOM
+      // =========================
+      const $ = (id) => document.getElementById(id);
+      const inputs = $("inputs");
+      const tabs = $("tabs");
+      const view = $("view");
+      const statusEl = $("status");
+      const dotEl = $("dot");
+      const viewTitle = $("viewTitle");
+      const viewMeta = $("viewMeta");
+      const backBtn = $("back");
+      const openSheetBtn = $("openSheet");
+      const globalErr = $("globalErr");
+      const pollSecInput = $("pollSec");
 
-    // =========================
-    // Helpers
-    // =========================
-    function setStatus(kind, text){
-      dotEl.classList.remove("ok","bad");
-      if (kind === "ok") dotEl.classList.add("ok");
-      if (kind === "bad") dotEl.classList.add("bad");
-      statusEl.textContent = text;
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "").replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[m]));
-    }
-
-    function parseSheetUrl(url){
-      try{
-        const u = new URL(url.trim());
-        const parts = u.pathname.split("/");
-        const di = parts.indexOf("d");
-        const sheetId = di>=0 ? parts[di+1] : null;
-
-        let gid = "0";
-        const m = (u.hash || "").match(/gid=(\d+)/);
-        if (m) gid = m[1];
-        if (u.searchParams.get("gid")) gid = u.searchParams.get("gid");
-        return { sheetId, gid };
-      } catch {
-        return { sheetId:null, gid:"0" };
+      // =========================
+      // Helpers
+      // =========================
+      function setStatus(kind, text) {
+        dotEl.classList.remove("ok", "bad");
+        if (kind === "ok") dotEl.classList.add("ok");
+        if (kind === "bad") dotEl.classList.add("bad");
+        statusEl.textContent = text;
       }
-    }
 
-    function gvizUrl(sheetId, gid){
-      // tqx=out:json fa restituire a GViz un testo tipo:
-      // /*O_o*/\ngoogle.visualization.Query.setResponse({...json...});
-      // che possiamo fetchare e parsare manualmente senza JSONP
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
-    }
-
-    // =========================
-    // Loader GViz via fetch (niente JSONP, niente script tag)
-    // GViz restituisce testo del tipo:
-    //   /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-    // Estraiamo il JSON con una regex e lo parsiamo.
-    // =========================
-    async function loadGvizViaFetch(url){
-      let resp;
-      try {
-        resp = await fetch(url, { credentials: "omit" });
-      } catch(e) {
-        console.error(
-          `[GViz] Errore di rete (fetch).\n` +
-          `  URL: ${url}\n` +
-          `  Errore: ${e?.message}\n` +
-          `  Cause possibili: connessione assente, CORS bloccato, foglio inesistente.`
+      function escapeHtml(s) {
+        return String(s ?? "").replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            })[m],
         );
-        throw new Error("Errore di rete. Controlla la console per dettagli.");
       }
 
-      if (!resp.ok) {
-        console.error(
-          `[GViz] HTTP ${resp.status} ${resp.statusText}\n` +
-          `  URL: ${url}\n` +
-          `  Causa più comune: foglio privato. Vai su Google Sheets → Condividi → ` +
-          `"Chiunque abbia il link" con ruolo Visualizzatore.`
+      function parseSheetUrl(url) {
+        try {
+          const u = new URL(url.trim());
+          const parts = u.pathname.split("/");
+          const di = parts.indexOf("d");
+          const sheetId = di >= 0 ? parts[di + 1] : null;
+
+          let gid = "0";
+          const m = (u.hash || "").match(/gid=(\d+)/);
+          if (m) gid = m[1];
+          if (u.searchParams.get("gid")) gid = u.searchParams.get("gid");
+          return { sheetId, gid };
+        } catch {
+          return { sheetId: null, gid: "0" };
+        }
+      }
+
+      function gvizUrl(sheetId, gid) {
+        // tqx=out:json fa restituire a GViz un testo tipo:
+        // /*O_o*/\ngoogle.visualization.Query.setResponse({...json...});
+        // che possiamo fetchare e parsare manualmente senza JSONP
+        return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+      }
+
+      // =========================
+      // Loader GViz via fetch (niente JSONP, niente script tag)
+      // GViz restituisce testo del tipo:
+      //   /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+      // Estraiamo il JSON con una regex e lo parsiamo.
+      // =========================
+      async function loadGvizViaFetch(url) {
+        let resp;
+        try {
+          resp = await fetch(url, { credentials: "omit" });
+        } catch (e) {
+          console.error(
+            `[GViz] Errore di rete (fetch).\n` +
+              `  URL: ${url}\n` +
+              `  Errore: ${e?.message}\n` +
+              `  Cause possibili: connessione assente, CORS bloccato, foglio inesistente.`,
+          );
+          throw new Error("Errore di rete. Controlla la console per dettagli.");
+        }
+
+        if (!resp.ok) {
+          console.error(
+            `[GViz] HTTP ${resp.status} ${resp.statusText}\n` +
+              `  URL: ${url}\n` +
+              `  Causa più comune: foglio privato. Vai su Google Sheets → Condividi → ` +
+              `"Chiunque abbia il link" con ruolo Visualizzatore.`,
+          );
+          throw new Error(
+            `HTTP ${resp.status}: foglio non accessibile. Controlla la console.`,
+          );
+        }
+
+        const text = await resp.text();
+        console.log(
+          "[GViz] Risposta grezza (primi 200 char):",
+          text.slice(0, 200),
         );
-        throw new Error(`HTTP ${resp.status}: foglio non accessibile. Controlla la console.`);
-      }
 
-      const text = await resp.text();
-      console.log("[GViz] Risposta grezza (primi 200 char):", text.slice(0, 200));
-
-      // GViz wrappa il JSON in: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-      // Estraiamo tutto ciò che è tra la prima "{" e l'ultima "}"
-      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/);
-      if (!match) {
-        console.error(
-          `[GViz] Impossibile parsare la risposta GViz.\n` +
-          `  Risposta ricevuta: ${text.slice(0, 500)}\n` +
-          `  Cause possibili: foglio privato, ID errato, o Google ha restituito HTML (pagina di login).`
+        // GViz wrappa il JSON in: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+        // Estraiamo tutto ciò che è tra la prima "{" e l'ultima "}"
+        const match = text.match(
+          /google\.visualization\.Query\.setResponse\(([\s\S]*)\)\s*;?\s*$/,
         );
-        throw new Error("Risposta GViz non parsabile. Controlla la console per dettagli.");
+        if (!match) {
+          console.error(
+            `[GViz] Impossibile parsare la risposta GViz.\n` +
+              `  Risposta ricevuta: ${text.slice(0, 500)}\n` +
+              `  Cause possibili: foglio privato, ID errato, o Google ha restituito HTML (pagina di login).`,
+          );
+          throw new Error(
+            "Risposta GViz non parsabile. Controlla la console per dettagli.",
+          );
+        }
+
+        let data;
+        try {
+          data = JSON.parse(match[1]);
+        } catch (e) {
+          console.error(
+            "[GViz] JSON.parse fallito:",
+            e.message,
+            "\n  Testo:",
+            match[1].slice(0, 300),
+          );
+          throw new Error("Errore parsing JSON GViz. Controlla la console.");
+        }
+
+        return data;
       }
 
-      let data;
-      try {
-        data = JSON.parse(match[1]);
-      } catch(e) {
-        console.error("[GViz] JSON.parse fallito:", e.message, "\n  Testo:", match[1].slice(0, 300));
-        throw new Error("Errore parsing JSON GViz. Controlla la console.");
-      }
+      function tableToRows(resp) {
+        const t = resp?.table;
+        if (!t?.cols || !t?.rows) return { cols: [], rows: [] };
 
-      return data;
-    }
+        // La prima riga del foglio è l'intestazione della tabella
+        const firstRow = t.rows[0];
+        const dataRows = t.rows.slice(1);
 
-    function tableToRows(resp){
-      const t = resp?.table;
-      if (!t?.cols || !t?.rows) return { cols:[], rows:[] };
-
-      // La prima riga del foglio è l'intestazione della tabella
-      const firstRow = t.rows[0];
-      const dataRows = t.rows.slice(1);
-
-      const cols = t.cols.map((c,i)=>{
-        // Usa il valore della prima riga come nome colonna, fallback su label GViz o "Col N"
-        const headerCell = firstRow?.c?.[i];
-        const headerVal = (headerCell?.f ?? headerCell?.v ?? "");
-        const name = (headerVal && String(headerVal).trim())
-          ? String(headerVal).trim()
-          : (c.label && String(c.label).trim()) ? c.label : `Col ${i+1}`;
-        return { k:"c"+i, n:name, type:c.type || "string" };
-      });
-
-      const rows = dataRows.map((r,ri)=>{
-        const o = { __id: ri };
-        (r.c || []).forEach((cell,i)=>{
-          const v = (cell?.f ?? cell?.v ?? "");
-          o["c"+i] = String(v);
+        const cols = t.cols.map((c, i) => {
+          // Usa il valore della prima riga come nome colonna, fallback su label GViz o "Col N"
+          const headerCell = firstRow?.c?.[i];
+          const headerVal = headerCell?.f ?? headerCell?.v ?? "";
+          const name =
+            headerVal && String(headerVal).trim()
+              ? String(headerVal).trim()
+              : c.label && String(c.label).trim()
+                ? c.label
+                : `Col ${i + 1}`;
+          return { k: "c" + i, n: name, type: c.type || "string" };
         });
-        return o;
-      });
 
-      return { cols, rows };
-    }
+        const rows = dataRows.map((r, ri) => {
+          const o = { __id: ri };
+          (r.c || []).forEach((cell, i) => {
+            const v = cell?.f ?? cell?.v ?? "";
+            o["c" + i] = String(v);
+          });
+          return o;
+        });
 
-    function hash32(str){
-      let h = 2166136261;
-      for (let i=0;i<str.length;i++){
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 16777619);
+        return { cols, rows };
       }
-      return (h>>>0).toString(16);
-    }
 
-
-    // Wrapper sicuro per localStorage (può fallire in Safari privato o iframe cross-origin)
-    function safeLocalGet(key){
-      try { return localStorage.getItem(key); }
-      catch(e) {
-        console.warn(`[localStorage] getItem fallito: ${e?.message}. Le note non saranno persistenti in questo contesto.`);
-        return null;
+      function hash32(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return (h >>> 0).toString(16);
       }
-    }
-    function safeLocalSet(key, val){
-      try { localStorage.setItem(key, val); }
-      catch(e) {
-        console.warn(`[localStorage] setItem fallito: ${e?.message}. Le note non verranno salvate.`);
+
+      // Wrapper sicuro per localStorage (può fallire in Safari privato o iframe cross-origin)
+      function safeLocalGet(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          console.warn(
+            `[localStorage] getItem fallito: ${e?.message}. Le note non saranno persistenti in questo contesto.`,
+          );
+          return null;
+        }
       }
-    }
-    // NOME: ora usiamo label leggibile (inserita dall’utente)
-    function sheetName(i){
-      const s = S[i];
-      if (s.label && s.label.trim()) return s.label.trim();
-      return `Lista ${i+1}`;
-    }
+      function safeLocalSet(key, val) {
+        try {
+          localStorage.setItem(key, val);
+        } catch (e) {
+          console.warn(
+            `[localStorage] setItem fallito: ${e?.message}. Le note non verranno salvate.`,
+          );
+        }
+      }
+      // NOME: ora usiamo label leggibile (inserita dall’utente)
+      function sheetName(i) {
+        const s = S[i];
+        if (s.label && s.label.trim()) return s.label.trim();
+        return `Lista ${i + 1}`;
+      }
 
-    // =========================
-    // Load one sheet
-    // =========================
-    async function loadSheet(i, silent=false){
-      const s = S[i];
-      s.error = "";
-      if (!s.url.trim()) return { changed:false };
+      // =========================
+      // Load one sheet
+      // =========================
+      async function loadSheet(i, silent = false) {
+        const s = S[i];
+        s.error = "";
+        if (!s.url.trim()) return { changed: false };
 
-      const {sheetId, gid} = parseSheetUrl(s.url);
-      if (!sheetId) {
-        console.error(
-          `[loadSheet] URL non valido per Lista ${i+1}.\n` +
-          `  URL inserito: "${s.url}"\n` +
-          `  L'URL deve essere un Google Sheets del tipo:\n` +
-          `    https://docs.google.com/spreadsheets/d/ID_FOGLIO/edit#gid=0\n` +
-          `  Assicurati che l'URL contenga "/spreadsheets/d/" e un ID foglio valido.`
+        const { sheetId, gid } = parseSheetUrl(s.url);
+        if (!sheetId) {
+          console.error(
+            `[loadSheet] URL non valido per Lista ${i + 1}.\n` +
+              `  URL inserito: "${s.url}"\n` +
+              `  L'URL deve essere un Google Sheets del tipo:\n` +
+              `    https://docs.google.com/spreadsheets/d/ID_FOGLIO/edit#gid=0\n` +
+              `  Assicurati che l'URL contenga "/spreadsheets/d/" e un ID foglio valido.`,
+          );
+          throw new Error("URL non valido. Controlla la console per dettagli.");
+        }
+
+        console.log(
+          `[loadSheet] Carico Lista ${i + 1} | sheetId=${sheetId} | gid=${gid}`,
         );
-        throw new Error("URL non valido. Controlla la console per dettagli.");
-      }
 
-      console.log(`[loadSheet] Carico Lista ${i+1} | sheetId=${sheetId} | gid=${gid}`);
+        const resp = await loadGvizViaFetch(gvizUrl(sheetId, gid));
+        if (resp?.status !== "ok") {
+          const detail =
+            resp?.errors?.[0]?.detailed_message ||
+            resp?.errors?.[0]?.message ||
+            "Nessun dettaglio disponibile";
+          const reason = resp?.errors?.[0]?.reason || "unknown";
+          console.error(
+            `[loadSheet] Foglio non accessibile (Lista ${i + 1}).\n` +
+              `  Status GViz: "${resp?.status}"\n` +
+              `  Reason: ${reason}\n` +
+              `  Dettaglio: ${detail}\n` +
+              `  Soluzione: vai su Google Sheets → Condividi → ` +
+              `"Chiunque abbia il link" con ruolo "Visualizzatore".`,
+          );
+          throw new Error(
+            detail ||
+              "Sheet non accessibile. Controlla la console per dettagli.",
+          );
+        }
 
-      const resp = await loadGvizViaFetch(gvizUrl(sheetId, gid));
-      if (resp?.status !== "ok"){
-        const detail = resp?.errors?.[0]?.detailed_message
-                    || resp?.errors?.[0]?.message
-                    || "Nessun dettaglio disponibile";
-        const reason = resp?.errors?.[0]?.reason || "unknown";
-        console.error(
-          `[loadSheet] Foglio non accessibile (Lista ${i+1}).\n` +
-          `  Status GViz: "${resp?.status}"\n` +
-          `  Reason: ${reason}\n` +
-          `  Dettaglio: ${detail}\n` +
-          `  Soluzione: vai su Google Sheets → Condividi → ` +
-          `"Chiunque abbia il link" con ruolo "Visualizzatore".`
+        const sig = hash32(JSON.stringify(resp.table || {}));
+        if (sig === s.sig) return { changed: false };
+        s.sig = sig;
+
+        const { cols, rows } = tableToRows(resp);
+        if (!cols.length) {
+          console.error(
+            `[loadSheet] Nessuna colonna trovata in Lista ${i + 1}.\n` +
+              `  Il foglio potrebbe essere vuoto, oppure il GID specificato punta ` +
+              `a un foglio privo di dati nella prima riga (intestazioni mancanti).`,
+          );
+          throw new Error(
+            "Nessuna colonna trovata. Controlla la console per dettagli.",
+          );
+        }
+
+        s.cols = cols;
+        s.rows = rows;
+        s.loaded = true;
+
+        console.log(
+          `[loadSheet] Lista ${i + 1} caricata: ${cols.length} colonne, ${rows.length} righe.`,
         );
-        throw new Error(detail || "Sheet non accessibile. Controlla la console per dettagli.");
+        if (!silent)
+          setStatus("ok", `Caricato: ${sheetName(i)} • ${rows.length} record`);
+        return { changed: true };
       }
 
-      const sig = hash32(JSON.stringify(resp.table || {}));
-      if (sig === s.sig) return { changed:false };
-      s.sig = sig;
-
-      const { cols, rows } = tableToRows(resp);
-      if (!cols.length) {
-        console.error(
-          `[loadSheet] Nessuna colonna trovata in Lista ${i+1}.\n` +
-          `  Il foglio potrebbe essere vuoto, oppure il GID specificato punta ` +
-          `a un foglio privo di dati nella prima riga (intestazioni mancanti).`
-        );
-        throw new Error("Nessuna colonna trovata. Controlla la console per dettagli.");
+      // =========================
+      // UI: Tabs
+      // =========================
+      function renderTabs() {
+        tabs.innerHTML = "";
+        S.forEach((s, i) => {
+          const b = document.createElement("button");
+          b.className = "tab" + (i === active ? " on" : "");
+          const badge = s.loaded ? ` (${s.rows.length})` : "";
+          b.textContent = sheetName(i) + badge;
+          b.onclick = () => {
+            active = i;
+            S[i].mode = "list";
+            S[i].sel = null;
+            render();
+          };
+          tabs.appendChild(b);
+        });
       }
 
-      s.cols = cols;
-      s.rows = rows;
-      s.loaded = true;
+      // =========================
+      // UI: Excel list view
+      // =========================
+      function renderList(s) {
+        if (!s.rows.length) {
+          view.innerHTML = `<div class="muted">Nessun record.</div>`;
+          return;
+        }
 
-      console.log(`[loadSheet] Lista ${i+1} caricata: ${cols.length} colonne, ${rows.length} righe.`);
-      if (!silent) setStatus("ok", `Caricato: ${sheetName(i)} • ${rows.length} record`);
-      return { changed:true };
-    }
+        const MAX_COLS = 10;
+        const shownCols = s.cols.slice(0, MAX_COLS);
 
-    // =========================
-    // UI: Tabs
-    // =========================
-    function renderTabs(){
-      tabs.innerHTML = "";
-      S.forEach((s,i)=>{
-        const b = document.createElement("button");
-        b.className = "tab" + (i===active ? " on" : "");
-        const badge = s.loaded ? ` (${s.rows.length})` : "";
-        b.textContent = sheetName(i) + badge;
-        b.onclick = ()=>{
-          active = i;
-          S[i].mode = "list";
-          S[i].sel = null;
-          render();
-        };
-        tabs.appendChild(b);
-      });
-    }
+        const wrap = document.createElement("div");
+        wrap.className = "tableWrap";
 
-    // =========================
-    // UI: Excel list view
-    // =========================
-    function renderList(s){
-      if (!s.rows.length){
-        view.innerHTML = `<div class="muted">Nessun record.</div>`;
-        return;
-      }
+        const scroll = document.createElement("div");
+        scroll.className = "tableScroll";
 
-      const MAX_COLS = 10;
-      const shownCols = s.cols.slice(0, MAX_COLS);
+        const table = document.createElement("table");
+        table.className = "excel";
 
-      const wrap = document.createElement("div");
-      wrap.className = "tableWrap";
-
-      const scroll = document.createElement("div");
-      scroll.className = "tableScroll";
-
-      const table = document.createElement("table");
-      table.className = "excel";
-
-      table.innerHTML = `
+        table.innerHTML = `
         <thead>
           <tr>
             <th class="rowIndex">#</th>
-            ${shownCols.map(c => `<th title="${escapeHtml(c.n)}">${escapeHtml(c.n)}</th>`).join("")}
+            ${shownCols.map((c) => `<th title="${escapeHtml(c.n)}">${escapeHtml(c.n)}</th>`).join("")}
             ${s.cols.length > MAX_COLS ? `<th><span class="smallChip">+${s.cols.length - MAX_COLS} col</span></th>` : ``}
           </tr>
         </thead>
         <tbody>
-          ${s.rows.map(r=>{
-            const isActive = (s.sel === r.__id);
-            return `
+          ${s.rows
+            .map((r) => {
+              const isActive = s.sel === r.__id;
+              return `
               <tr data-id="${r.__id}" class="${isActive ? "active" : ""}">
                 <td class="rowIndex">${r.__id + 1}</td>
-                ${shownCols.map(c => `<td title="${escapeHtml(r[c.k] || "")}">${escapeHtml(r[c.k] || "")}</td>`).join("")}
+                ${shownCols.map((c) => `<td title="${escapeHtml(r[c.k] || "")}">${escapeHtml(r[c.k] || "")}</td>`).join("")}
                 ${s.cols.length > MAX_COLS ? `<td class="cellMuted">…</td>` : ``}
               </tr>
             `;
-          }).join("")}
+            })
+            .join("")}
         </tbody>
       `;
 
-      table.addEventListener("click", (e)=>{
-        const tr = e.target.closest("tr[data-id]");
-        if (!tr) return;
-        s.mode = "detail";
-        s.sel = Number(tr.dataset.id);
-        render();
-      });
+        table.addEventListener("click", (e) => {
+          const tr = e.target.closest("tr[data-id]");
+          if (!tr) return;
+          s.mode = "detail";
+          s.sel = Number(tr.dataset.id);
+          render();
+        });
 
-      scroll.appendChild(table);
-      wrap.appendChild(scroll);
+        scroll.appendChild(table);
+        wrap.appendChild(scroll);
 
-      view.innerHTML = "";
-      view.appendChild(wrap);
-    }
+        view.innerHTML = "";
+        view.appendChild(wrap);
+      }
 
-    // =========================
-    // UI: CRM detail view
-    // =========================
-    function renderDetail(s){
-      const row = s.rows.find(r => r.__id === s.sel);
-      if (!row){ s.mode="list"; s.sel=null; render(); return; }
+      // =========================
+      // UI: CRM detail view
+      // =========================
+      function renderDetail(s) {
+        const row = s.rows.find((r) => r.__id === s.sel);
+        if (!row) {
+          s.mode = "list";
+          s.sel = null;
+          render();
+          return;
+        }
 
-      const title = (row[s.cols[0]?.k] || `Record ${row.__id+1}`).toString();
+        const title = (
+          row[s.cols[0]?.k] || `Record ${row.__id + 1}`
+        ).toString();
 
-      const important = ["name","nome","title","titolo","company","azienda","email","mail","phone","telefono","status","stato","owner","responsabile","id"];
-      const scored = s.cols.map(c=>{
-        const n = (c.n||"").toLowerCase();
-        const score = important.some(k=>n.includes(k)) ? 10 : 0;
-        return { c, score };
-      }).sort((a,b)=>b.score-a.score);
+        const important = [
+          "name",
+          "nome",
+          "title",
+          "titolo",
+          "company",
+          "azienda",
+          "email",
+          "mail",
+          "phone",
+          "telefono",
+          "status",
+          "stato",
+          "owner",
+          "responsabile",
+          "id",
+        ];
+        const scored = s.cols
+          .map((c) => {
+            const n = (c.n || "").toLowerCase();
+            const score = important.some((k) => n.includes(k)) ? 10 : 0;
+            return { c, score };
+          })
+          .sort((a, b) => b.score - a.score);
 
-      const leftCols = scored.map(x=>x.c);
+        const leftCols = scored.map((x) => x.c);
 
-      const root = document.createElement("div");
-      root.className = "crmWrap";
-      // Initials for avatar
-      const initials = title.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("") || "#";
-      root.innerHTML = `
+        const root = document.createElement("div");
+        root.className = "crmWrap";
+        // Initials for avatar
+        const initials =
+          title
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((w) => w[0]?.toUpperCase() || "")
+            .join("") || "#";
+        root.innerHTML = `
         <div class="crmHeader">
           <div class="crmHeaderLeft">
             <div class="crmAvatar">${escapeHtml(initials)}</div>
             <div class="crmHeaderText">
               <div class="crmTitle">${escapeHtml(title)}</div>
-              <div class="crmSub">REC · ${String(row.__id+1).padStart(4,"0")}</div>
+              <div class="crmSub">REC · ${String(row.__id + 1).padStart(4, "0")}</div>
             </div>
           </div>
           <div class="crmActions">
@@ -727,241 +1022,275 @@
         </div>
       `;
 
-      const left = root.querySelector("#crmLeft");
+        const left = root.querySelector("#crmLeft");
 
-      function addField(container, c){
-        const v = row[c.k] || "";
-        const el = document.createElement("div");
-        el.className = "crmField";
-        el.innerHTML = `
+        function addField(container, c) {
+          const v = row[c.k] || "";
+          const el = document.createElement("div");
+          el.className = "crmField";
+          el.innerHTML = `
           <div class="crmKey">${escapeHtml(c.n)}</div>
           <div class="crmVal${v ? "" : " empty"}">${escapeHtml(v || "—")}</div>
         `;
-        container.appendChild(el);
-      }
-
-      leftCols.forEach(c => addField(left, c));
-
-      const noteKey = `notes:${active}:${row.__id}`;
-      const notesEl = root.querySelector("#crmNotes");
-      notesEl.value = safeLocalGet(noteKey) || "";
-      notesEl.addEventListener("input", ()=> safeLocalSet(noteKey, notesEl.value));
-
-      root.querySelector("#crmCopy").onclick = async ()=>{
-        try{ await navigator.clipboard.writeText(JSON.stringify(row, null, 2)); setStatus("ok","JSON copiato"); }
-        catch{ setStatus("bad","Clipboard non disponibile"); }
-      };
-      root.querySelector("#crmCopyLink").onclick = async ()=>{
-        const link = `${location.href.split("#")[0]}#sheet=${active}&row=${row.__id}`;
-        try{ await navigator.clipboard.writeText(link); setStatus("ok","Link copiato"); }
-        catch{ setStatus("bad","Clipboard non disponibile"); }
-      };
-
-      view.innerHTML = "";
-      view.appendChild(root);
-    }
-
-    // =========================
-    // Render main
-    // =========================
-    function render(){
-      renderTabs();
-      globalErr.style.display = "none";
-      globalErr.textContent = "";
-
-      const s = S[active];
-      viewTitle.textContent = sheetName(active);
-
-      backBtn.style.display = (s.loaded && s.mode==="detail") ? "inline-block" : "none";
-      openSheetBtn.style.display = s.url.trim() ? "inline-block" : "none";
-
-      if (!s.url.trim()){
-        viewMeta.textContent = "Incolla un URL per questa lista.";
-        view.innerHTML = `<div class="muted">Nessun URL inserito.</div>`;
-        return;
-      }
-
-      if (!s.loaded){
-        viewMeta.textContent = "Non caricato";
-        view.innerHTML = `<div class="muted">Premi <b>Carica</b>.</div>`;
-        return;
-      }
-
-      viewMeta.textContent = `${s.rows.length} record`;
-
-      if (s.mode === "detail") renderDetail(s);
-      else renderList(s);
-    }
-
-    // =========================
-    // Auto-refresh (only active sheet)
-    // =========================
-    function startRefresh(){
-      stopRefresh();
-      timer = setInterval(async ()=>{
-        if (document.hidden) return;
-        const s = S[active];
-        if (!s.url.trim() || !s.loaded) return;
-
-        try{
-          const { changed } = await loadSheet(active, true);
-          if (changed){
-            setStatus("ok", `Aggiornato: ${sheetName(active)} • ${new Date().toLocaleTimeString()}`);
-            render();
-          }
-        } catch(e) {
-          console.warn(
-            `[polling] Aggiornamento automatico fallito per "${sheetName(active)}".\n` +
-            `  Errore: ${e?.message || e}\n` +
-            `  Il polling riproverà al prossimo intervallo (${REFRESH_MS/1000}s).`
-          );
-          // soft: non mostriamo errore in UI durante il polling silenzioso
+          container.appendChild(el);
         }
-      }, REFRESH_MS);
-    }
-    function stopRefresh(){
-      if (timer) clearInterval(timer);
-      timer = null;
-    }
 
-    function applyPollingFromUI(){
-      const sec = Math.max(10, Number(pollSecInput.value || 60));
-      pollSecInput.value = sec;
-      REFRESH_MS = sec * 1000;
-      startRefresh();
-      setStatus(null, `Polling impostato: ${sec}s`);
-    }
+        leftCols.forEach((c) => addField(left, c));
 
-    // =========================
-    // Inputs (Nome + URL)
-    // =========================
-    for (let i=0;i<MAX_SHEETS;i++){
-      const d = document.createElement("div");
-      d.innerHTML = `
+        const noteKey = `notes:${active}:${row.__id}`;
+        const notesEl = root.querySelector("#crmNotes");
+        notesEl.value = safeLocalGet(noteKey) || "";
+        notesEl.addEventListener("input", () =>
+          safeLocalSet(noteKey, notesEl.value),
+        );
+
+        root.querySelector("#crmCopy").onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(JSON.stringify(row, null, 2));
+            setStatus("ok", "JSON copiato");
+          } catch {
+            setStatus("bad", "Clipboard non disponibile");
+          }
+        };
+        root.querySelector("#crmCopyLink").onclick = async () => {
+          const link = `${location.href.split("#")[0]}#sheet=${active}&row=${row.__id}`;
+          try {
+            await navigator.clipboard.writeText(link);
+            setStatus("ok", "Link copiato");
+          } catch {
+            setStatus("bad", "Clipboard non disponibile");
+          }
+        };
+
+        view.innerHTML = "";
+        view.appendChild(root);
+      }
+
+      // =========================
+      // Render main
+      // =========================
+      function render() {
+        renderTabs();
+        globalErr.style.display = "none";
+        globalErr.textContent = "";
+
+        const s = S[active];
+        viewTitle.textContent = sheetName(active);
+
+        backBtn.style.display =
+          s.loaded && s.mode === "detail" ? "inline-block" : "none";
+        openSheetBtn.style.display = s.url.trim() ? "inline-block" : "none";
+
+        if (!s.url.trim()) {
+          viewMeta.textContent = "Incolla un URL per questa lista.";
+          view.innerHTML = `<div class="muted">Nessun URL inserito.</div>`;
+          return;
+        }
+
+        if (!s.loaded) {
+          viewMeta.textContent = "Non caricato";
+          view.innerHTML = `<div class="muted">Premi <b>Carica</b>.</div>`;
+          return;
+        }
+
+        viewMeta.textContent = `${s.rows.length} record`;
+
+        if (s.mode === "detail") renderDetail(s);
+        else renderList(s);
+      }
+
+      // =========================
+      // Auto-refresh (only active sheet)
+      // =========================
+      function startRefresh() {
+        stopRefresh();
+        timer = setInterval(async () => {
+          if (document.hidden) return;
+          const s = S[active];
+          if (!s.url.trim() || !s.loaded) return;
+
+          try {
+            const { changed } = await loadSheet(active, true);
+            if (changed) {
+              setStatus(
+                "ok",
+                `Aggiornato: ${sheetName(active)} • ${new Date().toLocaleTimeString()}`,
+              );
+              render();
+            }
+          } catch (e) {
+            console.warn(
+              `[polling] Aggiornamento automatico fallito per "${sheetName(active)}".\n` +
+                `  Errore: ${e?.message || e}\n` +
+                `  Il polling riproverà al prossimo intervallo (${REFRESH_MS / 1000}s).`,
+            );
+            // soft: non mostriamo errore in UI durante il polling silenzioso
+          }
+        }, REFRESH_MS);
+      }
+      function stopRefresh() {
+        if (timer) clearInterval(timer);
+        timer = null;
+      }
+
+      function applyPollingFromUI() {
+        const sec = Math.max(10, Number(pollSecInput.value || 60));
+        pollSecInput.value = sec;
+        REFRESH_MS = sec * 1000;
+        startRefresh();
+        setStatus(null, `Polling impostato: ${sec}s`);
+      }
+
+      // =========================
+      // Inputs (Nome + URL)
+      // =========================
+      for (let i = 0; i < MAX_SHEETS; i++) {
+        const d = document.createElement("div");
+        d.innerHTML = `
         <div class="muted">Nome</div>
         <input id="n${i}" class="w160" placeholder="Es. CRM Leads" />
         <div class="muted" style="margin-top:6px">URL</div>
         <input id="u${i}" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" />
       `;
-      inputs.appendChild(d);
+        inputs.appendChild(d);
 
-      const nameEl = $("n"+i);
-      const urlEl = $("u"+i);
+        const nameEl = $("n" + i);
+        const urlEl = $("u" + i);
 
-      nameEl.addEventListener("input", (e)=>{
-        S[i].label = e.target.value;
-        renderTabs();
-        if (i===active) render();
-      });
+        nameEl.addEventListener("input", (e) => {
+          S[i].label = e.target.value;
+          renderTabs();
+          if (i === active) render();
+        });
 
-      urlEl.addEventListener("input", (e)=>{
-        S[i].url = e.target.value;
-        // invalidate
-        S[i].loaded = false; S[i].cols=[]; S[i].rows=[]; S[i].sig="";
-        S[i].mode="list"; S[i].sel=null;
-        renderTabs();
-        if (i===active) render();
-      });
-    }
-
-    // =========================
-    // Buttons
-    // =========================
-    $("load").onclick = async ()=>{
-      setStatus(null, "Carico…");
-      globalErr.style.display = "none";
-      globalErr.textContent = "";
-
-      const any = S.some(s=>s.url.trim());
-      if (!any){
-        setStatus("bad","Nessun URL");
-        globalErr.textContent = "Inserisci almeno un URL prima di caricare.";
-        globalErr.style.display = "block";
-        return;
+        urlEl.addEventListener("input", (e) => {
+          S[i].url = e.target.value;
+          // invalidate
+          S[i].loaded = false;
+          S[i].cols = [];
+          S[i].rows = [];
+          S[i].sig = "";
+          S[i].mode = "list";
+          S[i].sel = null;
+          renderTabs();
+          if (i === active) render();
+        });
       }
 
-      let ok = 0, bad = 0;
-      await Promise.all(S.map(async (s,i)=>{
-        if (!s.url.trim()) return;
-        try{
-          await loadSheet(i, false);
-          ok++;
-        } catch(e){
-          s.loaded = false;
-          s.error = e?.message || "Errore";
-          bad++;
+      // =========================
+      // Buttons
+      // =========================
+      $("load").onclick = async () => {
+        setStatus(null, "Carico…");
+        globalErr.style.display = "none";
+        globalErr.textContent = "";
+
+        const any = S.some((s) => s.url.trim());
+        if (!any) {
+          setStatus("bad", "Nessun URL");
+          globalErr.textContent = "Inserisci almeno un URL prima di caricare.";
+          globalErr.style.display = "block";
+          return;
         }
-      }));
 
-      if (!S[active].loaded){
-        const first = S.findIndex(x=>x.loaded);
-        if (first>=0) active = first;
+        let ok = 0,
+          bad = 0;
+        await Promise.all(
+          S.map(async (s, i) => {
+            if (!s.url.trim()) return;
+            try {
+              await loadSheet(i, false);
+              ok++;
+            } catch (e) {
+              s.loaded = false;
+              s.error = e?.message || "Errore";
+              bad++;
+            }
+          }),
+        );
+
+        if (!S[active].loaded) {
+          const first = S.findIndex((x) => x.loaded);
+          if (first >= 0) active = first;
+        }
+
+        if (ok && !bad) setStatus("ok", `Caricati ${ok} fogli`);
+        else if (ok && bad) setStatus(null, `Caricati ${ok}, errori ${bad}`);
+        else setStatus("bad", "Errore caricamento");
+
+        const errs = S.filter((x) => x.url.trim() && !x.loaded).map(
+          (x) => `• ${sheetName(x.idx)}: ${x.error || "Errore"}`,
+        );
+        if (errs.length) {
+          globalErr.innerHTML = `<b>Alcuni fogli non sono leggibili:</b><br>${errs.map((e) => escapeHtml(e)).join("<br>")}`;
+          globalErr.style.display = "block";
+        }
+
+        render();
+        startRefresh();
+      };
+
+      $("reset").onclick = () => {
+        stopRefresh();
+        for (let i = 0; i < MAX_SHEETS; i++) {
+          S[i].url = "";
+          S[i].label = "";
+          S[i].cols = [];
+          S[i].rows = [];
+          S[i].loaded = false;
+          S[i].error = "";
+          S[i].mode = "list";
+          S[i].sel = null;
+          S[i].sig = "";
+          const u = $("u" + i);
+          if (u) u.value = "";
+          const n = $("n" + i);
+          if (n) n.value = "";
+        }
+        active = 0;
+        setStatus(null, "In attesa");
+        globalErr.style.display = "none";
+        render();
+        startRefresh();
+      };
+
+      backBtn.onclick = () => {
+        const s = S[active];
+        s.mode = "list";
+        s.sel = null;
+        render();
+      };
+
+      openSheetBtn.onclick = () => {
+        const u = S[active].url.trim();
+        if (u) window.open(u, "_blank", "noopener,noreferrer");
+      };
+
+      pollSecInput.addEventListener("change", applyPollingFromUI);
+      pollSecInput.addEventListener("blur", applyPollingFromUI);
+
+      // deep link support: #sheet=1&row=12
+      function applyHash() {
+        const h = location.hash.replace(/^#/, "");
+        if (!h) return;
+        const params = new URLSearchParams(h);
+        const si = Number(params.get("sheet"));
+        const ri = Number(params.get("row"));
+        if (!Number.isNaN(si) && si >= 0 && si < MAX_SHEETS) active = si;
+        if (!Number.isNaN(ri) && ri >= 0) {
+          S[active].mode = "detail";
+          S[active].sel = ri;
+        }
       }
+      window.addEventListener("hashchange", () => {
+        applyHash();
+        render();
+      });
 
-      if (ok && !bad) setStatus("ok", `Caricati ${ok} fogli`);
-      else if (ok && bad) setStatus(null, `Caricati ${ok}, errori ${bad}`);
-      else setStatus("bad", "Errore caricamento");
-
-      const errs = S.filter(x=>x.url.trim() && !x.loaded).map((x)=>`• ${sheetName(x.idx)}: ${x.error || "Errore"}`);
-      if (errs.length){
-        globalErr.innerHTML = `<b>Alcuni fogli non sono leggibili:</b><br>${errs.map(e=>escapeHtml(e)).join("<br>")}`;
-        globalErr.style.display = "block";
-      }
-
+      // boot
+      applyHash();
       render();
-      startRefresh();
-    };
-
-    $("reset").onclick = ()=>{
-      stopRefresh();
-      for (let i=0;i<MAX_SHEETS;i++){
-        S[i].url=""; S[i].label="";
-        S[i].cols=[]; S[i].rows=[]; S[i].loaded=false; S[i].error="";
-        S[i].mode="list"; S[i].sel=null; S[i].sig="";
-        const u = $("u"+i); if (u) u.value = "";
-        const n = $("n"+i); if (n) n.value = "";
-      }
-      active = 0;
-      setStatus(null,"In attesa");
-      globalErr.style.display="none";
-      render();
-      startRefresh();
-    };
-
-    backBtn.onclick = ()=>{
-      const s = S[active];
-      s.mode = "list";
-      s.sel = null;
-      render();
-    };
-
-    openSheetBtn.onclick = ()=>{
-      const u = S[active].url.trim();
-      if (u) window.open(u, "_blank", "noopener,noreferrer");
-    };
-
-    pollSecInput.addEventListener("change", applyPollingFromUI);
-    pollSecInput.addEventListener("blur", applyPollingFromUI);
-
-    // deep link support: #sheet=1&row=12
-    function applyHash(){
-      const h = location.hash.replace(/^#/, "");
-      if (!h) return;
-      const params = new URLSearchParams(h);
-      const si = Number(params.get("sheet"));
-      const ri = Number(params.get("row"));
-      if (!Number.isNaN(si) && si>=0 && si<MAX_SHEETS) active = si;
-      if (!Number.isNaN(ri) && ri>=0){
-        S[active].mode = "detail";
-        S[active].sel = ri;
-      }
-    }
-    window.addEventListener("hashchange", ()=>{ applyHash(); render(); });
-
-    // boot
-    applyHash();
-    render();
-    applyPollingFromUI(); // sets REFRESH_MS + starts refresh
-  </script>
-</body>
+      applyPollingFromUI(); // sets REFRESH_MS + starts refresh
+    </script>
+  </body>
 </html>
